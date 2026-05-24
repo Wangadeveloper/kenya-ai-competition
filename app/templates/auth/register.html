@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="min-h-screen flex items-center justify-center px-4 py-6 sm:px-6 lg:px-8 bg-gray-50">
+    
+    <div class="w-full max-w-6xl bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+        
+        <!-- Responsive Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-2">
+
+            <!-- LEFT SIDE -->
+            <div class="p-6 sm:p-8 lg:p-12 bg-gradient-to-br from-emerald-50 to-white border-b lg:border-b-0 lg:border-r border-gray-100">
+
+                <div class="max-w-md mx-auto">
+                    <div class="text-center lg:text-left mb-8">
+                        <h2 class="text-3xl sm:text-4xl font-bold text-gray-800 leading-tight">
+                            Welcome to AgriFinance
+                        </h2>
+
+                        <p class="text-sm sm:text-base text-gray-500 mt-3 leading-relaxed">
+                            Join our local community network to coordinate crops and secure loans safely.
+                        </p>
+                    </div>
+
+                    {% if form %}
+                    <form method="POST" action="" class="space-y-5">
+                        {{ form.hidden_tag() }}
+
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-2">
+                                Full Name (Kama ilivyo kwa ID)
+                            </label>
+
+                            {{ form.full_name(
+                                class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                            ) }}
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-2">
+                                Phone Number
+                            </label>
+
+                            {{ form.phone_number(
+                                class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm",
+                                placeholder="+254700000000"
+                            ) }}
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-2">
+                                Password / Secure PIN
+                            </label>
+
+                            {{ form.password(
+                                class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                            ) }}
+                        </div>
+
+                        <!-- Responsive Grid -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-2">
+                                    County
+                                </label>
+
+                                {{ form.county(
+                                    class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-sm"
+                                ) }}
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-2">
+                                    Main Value Crop
+                                </label>
+
+                                {{ form.main_crop(
+                                    class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-sm",
+                                    placeholder="e.g. Maize"
+                                ) }}
+                            </div>
+
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-2">
+                                Farm Acreage Size
+                            </label>
+
+                            {{ form.farm_size(
+                                class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-sm"
+                            ) }}
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-2">
+                                Cooperative Association Name
+                            </label>
+
+                            {{ form.cooperative(
+                                class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-sm",
+                                placeholder="e.g. Bungoma Outgrowers SACCO"
+                            ) }}
+                        </div>
+
+                        {{ form.submit(
+                            class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl transition shadow-sm text-sm cursor-pointer"
+                        ) }}
+
+                    </form>
+                    {% endif %}
+                </div>
+
+            </div>
+
+            <!-- RIGHT SIDE -->
+            <div class="p-6 sm:p-8 lg:p-12 flex items-center justify-center bg-white">
+
+                <div class="w-full max-w-md">
+
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-gray-800">
+                            Quick Sign In
+                        </h3>
+
+                        <p class="text-sm text-gray-500 mt-2">
+                            Access your dashboard and continue managing your farm activities.
+                        </p>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('auth.login') }}" class="space-y-5">
+
+                        <div>
+                            <input 
+                                type="text" 
+                                name="phone_number" 
+                                placeholder="Phone Number"
+                                class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-800"
+                                required
+                            >
+                        </div>
+
+                        <div>
+                            <input 
+                                type="password" 
+                                name="password" 
+                                placeholder="PIN / Password"
+                                class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-800"
+                                required
+                            >
+                        </div>
+
+                        <button 
+                            type="submit"
+                            class="w-full bg-gray-800 hover:bg-gray-900 text-white font-semibold py-3 rounded-xl transition text-sm cursor-pointer"
+                        >
+                            Login to Dashboard
+                        </button>
+
+                    </form>
+
+                    <!-- Registration Link -->
+                    <div class="mt-8 text-center border-t border-gray-100 pt-6">
+                        <p class="text-sm text-gray-500">
+                            New to AgriFinance?
+                        </p>
+
+                        <a 
+                            href="{{ url_for('auth.register') }}"
+                            class="inline-block mt-3 text-emerald-600 hover:text-emerald-700 font-semibold text-sm transition"
+                        >
+                            Create a New Account →
+                        </a>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

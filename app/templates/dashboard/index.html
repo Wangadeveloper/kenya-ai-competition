@@ -1,0 +1,387 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="max-w-7xl mx-auto py-4 sm:py-6">
+
+    <!-- HERO PROFILE CARD -->
+    <div class="relative overflow-hidden bg-gradient-to-br from-emerald-800 via-emerald-700 to-emerald-600 text-white rounded-3xl shadow-xl p-5 sm:p-8 mb-6">
+
+        <!-- Background Decoration -->
+        <div class="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-16 -mt-16"></div>
+        <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full -ml-10 -mb-10"></div>
+
+        <div class="relative z-10">
+
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+
+                <!-- LEFT -->
+                <div>
+
+                    <span class="inline-flex items-center gap-2 text-xs uppercase tracking-widest bg-emerald-900/40 px-3 py-1.5 rounded-full text-emerald-100 font-semibold border border-white/10">
+                        🌱 Farmer Profile
+                    </span>
+
+                    <h2 class="text-2xl sm:text-4xl font-bold mt-4 leading-tight">
+                        {{ user.full_name }}
+                    </h2>
+
+                    <p class="text-sm sm:text-base text-emerald-100 mt-2 opacity-90">
+                        {{ user.cooperative if user.cooperative else 'Independent Smallholder Farmer' }}
+                    </p>
+
+                </div>
+
+                <!-- RIGHT STATS -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full lg:w-auto">
+
+                    <div class="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl px-5 py-4">
+                        <p class="text-xs uppercase tracking-wider text-emerald-100">
+                            Location
+                        </p>
+
+                        <h3 class="text-lg font-bold mt-1">
+                            📍 {{ user.county }}
+                        </h3>
+                    </div>
+
+                    <div class="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl px-5 py-4">
+                        <p class="text-xs uppercase tracking-wider text-emerald-100">
+                            Main Crop
+                        </p>
+
+                        <h3 class="text-lg font-bold mt-1">
+                            🌾 {{ user.main_crop }}
+                        </h3>
+
+                        <p class="text-xs text-emerald-100 mt-1">
+                            {{ user.farm_size }} Acres
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- MAIN GRID -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+        <!-- LEFT CONTENT -->
+        <div class="xl:col-span-2 space-y-6">
+
+            <!-- AI ADVICE -->
+            <div class="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-3xl p-5 sm:p-6 shadow-sm">
+
+                <div class="flex items-start gap-4">
+
+                    <div class="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center text-2xl shrink-0">
+                        💡
+                    </div>
+
+                    <div class="flex-1">
+
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+
+                            <h3 class="text-lg font-bold text-amber-900">
+                                AI Market Advice
+                            </h3>
+
+                            <span class="text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-semibold">
+                                Ushauri wa Msaidizi
+                            </span>
+
+                        </div>
+
+                        <p class="text-sm text-amber-950 leading-relaxed">
+
+                            {% if user.main_crop.lower() == 'maize' %}
+
+                                Maize prices in {{ user.county }} are stabilizing at 3,400 KES.
+                                Consider expanding local bean cover crops this month to improve
+                                nitrogen soil fixing and maintain long-term soil health.
+
+                            {% else %}
+
+                                Local market checks indicate buyer visibility for
+                                {{ user.main_crop }} is healthy across your sub-county cluster.
+                                Ensure post-harvest storage conditions remain dry and well ventilated.
+
+                            {% endif %}
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- QUICK TOOLS -->
+            <div>
+
+                <div class="flex items-center justify-between mb-4">
+
+                    <h3 class="text-sm font-bold uppercase tracking-wider text-gray-500">
+                        Quick Farm Tools
+                    </h3>
+
+                    <span class="text-xs text-gray-400">
+                        Productivity Center
+                    </span>
+
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                    <!-- PLAN SEASON -->
+                    <a href="{{ url_for('dashboard.plan_season') }}"
+                       class="group bg-white border border-gray-200 rounded-3xl p-5 shadow-sm hover:shadow-lg hover:border-emerald-500 transition duration-300">
+
+                        <div class="flex items-start gap-4">
+
+                            <div class="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center text-3xl group-hover:scale-110 transition">
+                                🚜
+                            </div>
+
+                            <div>
+
+                                <h4 class="text-lg font-bold text-gray-800">
+                                    Plan Season
+                                </h4>
+
+                                <p class="text-sm text-gray-500 mt-1 leading-relaxed">
+                                    Maximize farm productivity and optimize seasonal yield margins.
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    </a>
+
+                    <!-- APPLY LOAN -->
+                    <a href="{{ url_for('loans.apply_loan') }}"
+                       class="group bg-white border border-gray-200 rounded-3xl p-5 shadow-sm hover:shadow-lg hover:border-emerald-500 transition duration-300">
+
+                        <div class="flex items-start gap-4">
+
+                            <div class="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center text-3xl group-hover:scale-110 transition">
+                                💸
+                            </div>
+
+                            <div>
+
+                                <h4 class="text-lg font-bold text-gray-800">
+                                    Apply Loan
+                                </h4>
+
+                                <p class="text-sm text-gray-500 mt-1 leading-relaxed">
+                                    Secure affordable financing and fair agricultural credit terms.
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    </a>
+
+                </div>
+
+            </div>
+
+            <!-- MARKET PRICES -->
+            <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 sm:p-6">
+
+                <div class="flex items-center justify-between mb-5">
+
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800">
+                            Market Pricing Matrix
+                        </h3>
+
+                        <p class="text-sm text-gray-500 mt-1">
+                            Chamber of Commerce Regional Pricing
+                        </p>
+                    </div>
+
+                    <div class="text-2xl">
+                        📈
+                    </div>
+
+                </div>
+
+                <div class="space-y-4">
+
+                    {% for market in markets %}
+
+                    <div class="bg-gray-50 hover:bg-emerald-50 border border-gray-100 rounded-2xl p-4 transition">
+
+                        <div class="flex items-center justify-between gap-4">
+
+                            <div>
+
+                                <h4 class="text-base font-bold text-gray-800">
+                                    {{ market.crop }}
+                                </h4>
+
+                                <p class="text-xs text-gray-400 mt-1">
+                                    {{ user.county }} Regional Dynamic Market
+                                </p>
+
+                            </div>
+
+                            <div class="text-right">
+
+                                <span class="block text-lg font-bold text-gray-900">
+                                    {{ market.price }}
+                                </span>
+
+                                <span class="text-xs font-semibold
+                                    {% if 'Up' in market.trend %}
+                                        text-emerald-600
+                                    {% elif 'Down' in market.trend %}
+                                        text-rose-600
+                                    {% else %}
+                                        text-gray-500
+                                    {% endif %}
+                                ">
+                                    {{ market.trend }}
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- RIGHT SIDEBAR -->
+        <div class="space-y-6">
+
+            <!-- LOAN STATUS -->
+            {% if loan %}
+
+            <div class="bg-white border border-gray-100 rounded-3xl shadow-sm p-5">
+
+                <div class="flex items-center justify-between mb-5">
+
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800">
+                            Loan Status
+                        </h3>
+
+                        <p class="text-sm text-gray-500 mt-1">
+                            Active Financing Application
+                        </p>
+                    </div>
+
+                    <span class="px-3 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800">
+                        {{ loan.status }}
+                    </span>
+
+                </div>
+
+                <div class="space-y-4">
+
+                    <div class="bg-gray-50 rounded-2xl p-4">
+
+                        <p class="text-xs uppercase tracking-wider text-gray-500">
+                            Requested Amount
+                        </p>
+
+                        <h4 class="text-2xl font-bold text-gray-900 mt-1">
+                            KES {{ loan.requested_amount }}
+                        </h4>
+
+                    </div>
+
+                    <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-100">
+
+                        <p class="text-xs uppercase tracking-wider text-emerald-700">
+                            AI Risk Score
+                        </p>
+
+                        <h4 class="text-3xl font-bold text-emerald-700 mt-1">
+                            {{ loan.ai_risk_score }}/100
+                        </h4>
+
+                    </div>
+
+                    <div class="bg-gray-50 rounded-2xl p-4">
+
+                        <p class="text-xs uppercase tracking-wider text-gray-500 mb-2">
+                            AI Assessment Report
+                        </p>
+
+                        <p class="text-sm text-gray-600 italic leading-relaxed">
+                            "{{ loan.ai_report }}"
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endif %}
+
+            <!-- PROFILE ACTIONS -->
+            <div class="bg-white border border-gray-100 rounded-3xl shadow-sm p-5">
+
+                <h3 class="text-lg font-bold text-gray-800 mb-4">
+                    Profile Actions
+                </h3>
+
+                <div class="space-y-3">
+
+                    <a href="{{ url_for('community.feed') }}"
+                       class="flex items-center justify-between bg-gray-50 hover:bg-emerald-50 border border-gray-100 rounded-2xl px-4 py-3 transition">
+
+                        <div class="flex items-center gap-3">
+                            <span class="text-xl">👥</span>
+
+                            <span class="text-sm font-medium text-gray-700">
+                                Community Feed
+                            </span>
+                        </div>
+
+                        <span class="text-gray-400">→</span>
+
+                    </a>
+
+                    <a href="{{ url_for('auth.logout') }}"
+                       class="flex items-center justify-between bg-rose-50 hover:bg-rose-100 border border-rose-100 rounded-2xl px-4 py-3 transition">
+
+                        <div class="flex items-center gap-3">
+                            <span class="text-xl">🚪</span>
+
+                            <span class="text-sm font-medium text-rose-700">
+                                Logout Session
+                            </span>
+                        </div>
+
+                        <span class="text-rose-400">→</span>
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

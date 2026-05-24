@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="max-w-3xl mx-auto py-4 sm:py-6">
+    <div class="bg-white p-5 sm:p-6 rounded-3xl shadow-sm border border-gray-100">
+        
+        <div class="flex items-center space-x-2 text-emerald-800 font-bold text-base mb-4">
+            <span class="text-xl">📋</span>
+            <h2 class="text-lg font-bold text-gray-800">Your Custom Farming Plan</h2>
+        </div>
+        
+        <div class="bg-gray-50 p-4 rounded-2xl text-xs text-gray-700 grid grid-cols-1 sm:grid-cols-3 gap-3 border border-gray-200 shadow-xs mb-6">
+            <div>
+                <p class="text-gray-400 font-medium">Selected Crop Focus</p>
+                <p class="font-bold text-gray-800 mt-0.5">🌽 {{ plan.crop_type }}</p>
+            </div>
+            <div>
+                <p class="text-gray-400 font-medium">Budget Profile</p>
+                <p class="font-bold text-gray-800 mt-0.5">KES {{ "{:,.2f}".format(plan.budget) }}</p>
+            </div>
+            <div>
+                <p class="text-gray-400 font-medium">Irrigation Framework</p>
+                <p class="font-bold text-gray-800 mt-0.5">💧 {{ plan.irrigation_type }}</p>
+            </div>
+        </div>
+
+        <div class="bg-emerald-50/40 p-5 sm:p-6 rounded-2xl border border-emerald-100/80">
+            <h3 class="font-bold text-emerald-900 text-sm mb-4 flex items-center gap-1.5 border-b border-emerald-100 pb-2">
+                <span>🌿</span> Explainable Agricultural Strategic Advisory Output
+            </h3>
+            
+            <div class="prose max-w-none text-sm text-gray-800 leading-relaxed">
+                {{ content | render_markdown }}
+            </div>
+        </div>
+
+        <div class="mt-6 pt-5 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+            
+            <a 
+                href="{{ url_for('dashboard.index') }}" 
+                class="w-full sm:w-auto text-center border border-gray-200 hover:bg-gray-50 text-gray-600 text-xs font-semibold px-5 py-3 rounded-xl transition"
+            >
+                Return to Workspace Panel Home
+            </a>
+            
+            <a 
+                href="{{ url_for('dashboard.download_pdf', plan_id=plan.id) }}" 
+                class="w-full sm:w-auto text-center bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold px-6 py-3.5 rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+                <span>📥</span> Download Strategy Paper (PDF)
+            </a>
+
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
