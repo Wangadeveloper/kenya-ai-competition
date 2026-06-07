@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>AgriFinance Community Assistant</title>
+    <title>{% block title %}AgriFinance Community Assistant{% endblock %}</title>
 
-    <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
 
-    <!-- Fonts -->
     <style>
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont,
@@ -37,197 +37,153 @@
     </style>
 </head>
 
-<body class="bg-gradient-to-br from-gray-50 via-white to-emerald-50 text-gray-900 min-h-screen flex flex-col">
+<body class="bg-gradient-to-br from-gray-50 via-white to-emerald-50 text-gray-900 min-h-screen flex flex-col pb-20 sm:pb-0">
 
-    <!-- HEADER -->
     <header class="sticky top-0 z-50 backdrop-blur-lg bg-white/80 border-b border-gray-200 shadow-sm">
-
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
             <div class="flex items-center justify-between py-4">
 
-                <!-- LOGO -->
-                <a href="/" class="flex items-center gap-3">
-
-                    <div class="w-10 h-10 rounded-2xl bg-emerald-600 flex items-center justify-center shadow-md">
-                        <span class="text-white text-lg font-bold">🌱</span>
+                <a href="/" class="flex items-center gap-3 group">
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-600 flex items-center justify-center shadow-md group-hover:scale-105 transition">
+                        <i data-lucide="sprout" class="text-white w-5 h-5"></i>
                     </div>
 
                     <div>
                         <h1 class="text-lg sm:text-xl font-bold tracking-tight text-gray-800">
                             AgriFinance
                         </h1>
-
                         <p class="text-[11px] text-gray-500 hidden sm:block">
                             Community Assistant Platform
                         </p>
                     </div>
-
                 </a>
 
-                <!-- RIGHT SIDE -->
                 <div class="flex items-center gap-3">
 
                     {% if current_user.is_authenticated %}
-
-                        <div class="hidden sm:flex items-center gap-2 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded-full">
-
-                            <span class="text-sm">📍</span>
-
+                        <div class="hidden sm:flex items-center gap-2 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-full">
+                            <i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-600"></i>
                             <span class="text-xs font-semibold text-emerald-700">
-                                {{ current_user.county }}
+                                {{ current_user.county if current_user.county else 'Verified' }}
                             </span>
-
                         </div>
 
                         <a href="{{ url_for('auth.logout') }}"
-                           class="text-sm bg-gray-900 hover:bg-black text-white px-4 py-2 rounded-xl transition shadow-sm">
+                           class="text-sm font-medium border border-gray-200 hover:border-gray-300 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-xl transition shadow-sm">
                             Logout
                         </a>
-
                     {% else %}
-
                         <a href="{{ url_for('auth.login') }}"
-                           class="text-sm text-gray-700 hover:text-emerald-600 font-medium transition">
+                           class="text-sm text-gray-700 hover:text-emerald-600 font-medium transition px-2 py-2">
                             Login
                         </a>
 
                         <a href="{{ url_for('auth.register') }}"
-                           class="text-sm bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl transition shadow-sm">
+                           class="text-sm bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-xl transition shadow-sm">
                             Register
                         </a>
-
                     {% endif %}
 
                 </div>
 
             </div>
-
         </div>
-
     </header>
 
-    <!-- FLASH MESSAGES -->
     <section class="w-full px-4 sm:px-6 lg:px-8 mt-4">
-
         <div class="max-w-5xl mx-auto">
-
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
-
                     {% for category, msg in messages %}
-
-                        <div class="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 shadow-sm">
-
+                        {% if category == 'error' or category == 'danger' %}
+                        <div class="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 shadow-sm">
                             <div class="flex items-start gap-3">
-
-                                <div class="text-lg">✅</div>
-
+                                <i data-lucide="alert-circle" class="text-red-600 w-5 h-5 mt-0.5"></i>
                                 <div>
-                                    <p class="text-sm font-medium text-emerald-800">
-                                        {{ msg }}
-                                    </p>
+                                    <p class="text-sm font-medium text-red-800">{{ msg }}</p>
                                 </div>
-
                             </div>
-
                         </div>
-
+                        {% else %}
+                        <div class="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 shadow-sm">
+                            <div class="flex items-start gap-3">
+                                <i data-lucide="check-circle-2" class="text-emerald-600 w-5 h-5 mt-0.5"></i>
+                                <div>
+                                    <p class="text-sm font-medium text-emerald-800">{{ msg }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
                     {% endfor %}
-
                 {% endif %}
             {% endwith %}
-
         </div>
-
     </section>
 
-    <!-- MAIN CONTENT -->
-    <main class="flex-1 w-full px-4 sm:px-6 lg:px-8 pb-24">
-
+    <main class="flex-1 w-full px-4 sm:px-6 lg:px-8 py-6 sm:pb-24">
         <div class="max-w-7xl mx-auto">
             {% block content %}{% endblock %}
         </div>
-
     </main>
 
-    <!-- MOBILE BOTTOM NAVIGATION -->
     {% if current_user.is_authenticated %}
-
     <nav class="fixed bottom-0 left-0 right-0 z-50 sm:hidden">
-
-        <div class="mx-3 mb-3 bg-white/95 backdrop-blur-lg border border-gray-200 rounded-3xl shadow-2xl">
-
-            <div class="grid grid-cols-4 text-center text-xs text-gray-600">
-
+        <div class="mx-4 mb-4 bg-white/90 backdrop-blur-md border border-gray-200/80 rounded-2xl shadow-xl">
+            <div class="grid grid-cols-4 text-center text-[10px] font-medium text-gray-500">
                 <a href="{{ url_for('dashboard.index') }}"
-                   class="flex flex-col items-center py-3 hover:text-emerald-600 transition">
-
-                    <span class="text-xl">🏡</span>
-                    <span class="mt-1">Home</span>
-
+                   class="flex flex-col items-center py-2.5 hover:text-emerald-600 text-gray-600 transition">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5 mb-0.5"></i>
+                    <span>Dashboard</span>
                 </a>
 
                 <a href="{{ url_for('community.feed') }}"
-                   class="flex flex-col items-center py-3 hover:text-emerald-600 transition">
-
-                    <span class="text-xl">👥</span>
-                    <span class="mt-1">Community</span>
-
+                   class="flex flex-col items-center py-2.5 hover:text-emerald-600 text-gray-600 transition">
+                    <i data-lucide="users-2" class="w-5 h-5 mb-0.5"></i>
+                    <span>Community</span>
                 </a>
 
-                <a href="{{ url_for('dashboard.plan_season') }}"
-                   class="flex flex-col items-center py-3 hover:text-emerald-600 transition">
-
-                    <span class="text-xl">🌱</span>
-                    <span class="mt-1">Season</span>
-
+                <a href="{{ url_for('dashboard.plan_season') if hasattr(url_for, 'dashboard.plan_season') else '#' }}"
+                   class="flex flex-col items-center py-2.5 hover:text-emerald-600 text-gray-600 transition">
+                    <i data-lucide="calendar-days" class="w-5 h-5 mb-0.5"></i>
+                    <span>Season</span>
                 </a>
 
                 <a href="{{ url_for('loans.apply_loan') }}"
-                   class="flex flex-col items-center py-3 hover:text-emerald-600 transition">
-
-                    <span class="text-xl">💰</span>
-                    <span class="mt-1">Loans</span>
-
+                   class="flex flex-col items-center py-2.5 hover:text-emerald-600 text-gray-600 transition">
+                    <i data-lucide="coins" class="w-5 h-5 mb-0.5"></i>
+                    <span>Loans</span>
                 </a>
-
             </div>
-
         </div>
-
     </nav>
 
-    <!-- DESKTOP SIDEBAR / TOP NAV -->
     <div class="hidden sm:block fixed bottom-6 right-6 z-50">
-
-        <div class="bg-white border border-gray-200 shadow-2xl rounded-2xl p-2 flex items-center gap-2">
-
+        <div class="bg-white/90 backdrop-blur-md border border-gray-200/80 shadow-xl rounded-2xl p-1.5 flex items-center gap-1">
             <a href="{{ url_for('dashboard.index') }}"
-               class="px-4 py-3 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-sm font-medium">
-                🏡 Home
+               class="px-3.5 py-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 text-gray-700 transition text-xs font-semibold flex items-center gap-1.5">
+                <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
             </a>
 
             <a href="{{ url_for('community.feed') }}"
-               class="px-4 py-3 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-sm font-medium">
-                👥 Community
+               class="px-3.5 py-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 text-gray-700 transition text-xs font-semibold flex items-center gap-1.5">
+                <i data-lucide="users-2" class="w-4 h-4"></i> Community
             </a>
 
             <a href="{{ url_for('dashboard.plan_season') }}"
-               class="px-4 py-3 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-sm font-medium">
-                🌱 Plan Season
+               class="px-3.5 py-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 text-gray-700 transition text-xs font-semibold flex items-center gap-1.5">
+                <i data-lucide="calendar-days" class="w-4 h-4"></i> Plan Season
             </a>
 
             <a href="{{ url_for('loans.apply_loan') }}"
-               class="px-4 py-3 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition text-sm font-medium">
-                💰 Loans
+               class="px-3.5 py-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 text-gray-700 transition text-xs font-semibold flex items-center gap-1.5">
+                <i data-lucide="coins" class="w-4 h-4"></i> Loans
             </a>
-
         </div>
-
     </div>
-
     {% endif %}
 
+    <script>
+        lucide.createIcons();
+    </script>
 </body>
 </html>

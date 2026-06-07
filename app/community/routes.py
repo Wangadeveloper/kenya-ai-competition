@@ -1,5 +1,5 @@
 import os
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
 from app.extensions import db
 from app.models.sql_models import Post, User
@@ -10,43 +10,52 @@ from neo4j import GraphDatabase
 community_bp = Blueprint('community', __name__)
 
 def get_neo4j_driver():
-    """Returns a direct standalone engine driver reference to Neo4j Cloud instance."""
+    """Returns a direct standalone engine driver reference using active Flask context settings."""
     return GraphDatabase.driver(
-        os.getenv("NEO4J_URI"), 
-        auth=(os.getenv("NEO4J_USERNAME"), os.getenv("NEO4J_PASSWORD"))
+        current_app.config.get("NEO4J_URI", os.getenv("NEO4J_URI")), 
+        auth=(
+            current_app.config.get("NEO4J_USER", os.getenv("NEO4J_USERNAME")), 
+            current_app.config.get("NEO4J_PASSWORD", os.getenv("NEO4J_PASSWORD"))
+        )
     )
 
 @community_bp.route('/feed', methods=['GET', 'POST'])
 @login_required
 def feed():
     if request.method == 'POST':
-        content = request.form.get('content')
-        crop_tag = request.form.get('crop_tag')
-        yt_url = request.form.get('youtube_url')
+        content = request.form.get('content', '').strip()
+        crop_tag = request.form.get('crop_tag', 'General')
+        yt_url = request.form.get('youtube_url', '').strip()
         
+        if not content:
+            flash('Post body content cannot be empty.', 'danger')
+            return redirect(url_for('community.feed'))
+
         summary_text = None
         
-        # 1. Process YouTube via Gemini if URL string exists
-        if yt_url and yt_url.strip():
+        # 1. Process YouTube URL link via Gemini using existing summary service pipelines
+        if yt_url:
             try:
                 ai = AIService()
                 summary_text = ai.summarize_youtube_content(yt_url)
             except Exception as e:
-                summary_text = "AI summary temporarily delayed due to gateway initialization rules."
+                summary_text = f"Muhtasari wa video haupatikani kwa sasa. Kiungo: {yt_url}"
 
-        # 2. Persist Structural Post directly to Relational SQLite Core Engine
+        # Combine summary data directly into the standard Post schema parameters
+        full_body = content
+        if summary_text:
+            full_body += f"\n\n--- AI Video Takeaways ---\n{summary_text}"
+
+        # 2. Persist directly into the Relational Core SQLite Database Structure
         new_post = Post(
             user_id=current_user.id,
-            content=content,
-            youtube_url=yt_url if yt_url else None,
-            video_summary=summary_text,
-            county_tag=current_user.county,
-            crop_tag=crop_tag
+            title=f"Advisory regarding #{crop_tag}",
+            body=full_body
         )
         db.session.add(new_post)
         db.session.commit()
         
-        # 3. NEO4J NETWORK BROADCAST ENGINE: Traverse graph connections to pull phone metrics
+        # 3. NEO4J NETWORK BROADCAST ENGINE: Traverse graph network connections to notify peers
         try:
             driver = get_neo4j_driver()
             with driver.session() as session:
@@ -57,7 +66,7 @@ def feed():
                 results = session.run(cypher_broadcast, farmer_phone=current_user.phone_number)
                 
                 alert_payload = (
-                    f"Mkulima {current_user.full_name} ameposti ushauri mpya kuhusu #{crop_tag or 'Kilimo'}: "
+                    f"Mkulima {current_user.full_name} ameposti ushauri mpya kuhusu #{crop_tag}: "
                     f"{summary_text if summary_text else content[:60]}"
                 )
                 
@@ -71,7 +80,7 @@ def feed():
                         NotificationService.send_sms_via_africastalking(target_phone, alert_payload)
             driver.close()
         except Exception as graph_err:
-            # Prevent app crashing if graph pipeline hit a structural connection timeout
+            # Safe boundary fall-through to prevent thread crashing due to offline graph timeouts
             pass
 
         flash('Post shared successfully and ecosystem graph network notified!', 'success')
@@ -93,7 +102,6 @@ def subscribe(farmer_phone):
     try:
         driver = get_neo4j_driver()
         with driver.session() as session:
-            # Native graph processing: upsert nodes and the directional relationship context safely
             cypher_subscribe = """
             MERGE (subscriber:User {phone_number: $sub_phone})
             SET subscriber.full_name = $sub_name
@@ -111,6 +119,6 @@ def subscribe(farmer_phone):
         driver.close()
         flash(f"Utafahamishwa updates kutoka kwa mkulima huyu kupitia {channel}!", "success")
     except Exception as e:
-        flash("Graph database synchronization error encountered. Try again shortly.", "danger")
+        flash("Graph database network serialization fallback encountered.", "danger")
         
     return redirect(url_for('community.feed'))

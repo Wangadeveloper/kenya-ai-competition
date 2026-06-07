@@ -12,15 +12,17 @@
         <div class="bg-gray-50 p-4 rounded-2xl text-xs text-gray-700 grid grid-cols-1 sm:grid-cols-3 gap-3 border border-gray-200 shadow-xs mb-6">
             <div>
                 <p class="text-gray-400 font-medium">Selected Crop Focus</p>
-                <p class="font-bold text-gray-800 mt-0.5">🌽 {{ plan.crop_type }}</p>
+                <p class="font-bold text-gray-800 mt-0.5">
+                    {% if 'maize' in plan.crop_to_plant.lower() %}🌽{% elif 'bean' in plan.crop_to_plant.lower() %}🌱{% else %}🌿{% endif %} {{ plan.crop_to_plant }}
+                </p>
             </div>
             <div>
                 <p class="text-gray-400 font-medium">Budget Profile</p>
-                <p class="font-bold text-gray-800 mt-0.5">KES {{ "{:,.2f}".format(plan.budget) }}</p>
+                <p class="font-bold text-gray-800 mt-0.5">KES {{ "{:,.2f}".format(plan.estimated_budget) }}</p>
             </div>
             <div>
-                <p class="text-gray-400 font-medium">Irrigation Framework</p>
-                <p class="font-bold text-gray-800 mt-0.5">💧 {{ plan.irrigation_type }}</p>
+                <p class="text-gray-400 font-medium">Seasonal Designation</p>
+                <p class="font-bold text-gray-800 mt-0.5">🗓️ {{ plan.season_name }}</p>
             </div>
         </div>
 
@@ -30,7 +32,7 @@
             </h3>
             
             <div class="prose max-w-none text-sm text-gray-800 leading-relaxed">
-                {{ content | render_markdown }}
+                {{ content }}
             </div>
         </div>
 

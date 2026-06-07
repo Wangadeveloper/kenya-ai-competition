@@ -12,42 +12,73 @@ class Neo4jService:
     def close(self):
         self.driver.close()
 
-    def create_farmer_node(self, user_id, name, county, cooperative, main_crop):
+    def create_farmer_node(self, user_id, name, phone_number, county, main_crop=None, cooperative=None):
+        """
+        Creates or updates a unified User node within the graph database network, 
+        mapping structural attributes like location and cooperative membership.
+        """
         with self.driver.session() as session:
             query = """
-            MERGE (f:Farmer {id: $user_id})
-            SET f.name = $name, f.county = $county
-            WITH f
-            MERGE (c:Crop {name: $main_crop})
-            MERGE (f)-[:GROWS]->(c)
-            WITH f
-            IF $cooperative IS NOT NULL AND $cooperative <> ''
+            MERGE (u:User {phone_number: $phone_number})
+            SET u.user_id = $user_id, u.full_name = $name, u.county = $county, u.role = 'farmer'
+            WITH u
+            WHERE $main_crop IS NOT NULL AND $main_crop <> ''
+                MERGE (c:Crop {name: $main_crop})
+                MERGE (u)-[:GROWS]->(c)
+            WITH u
+            WHERE $cooperative IS NOT NULL AND $cooperative <> ''
                 MERGE (coop:Cooperative {name: $cooperative})
-                MERGE (f)-[:MEMBER_OF]->(coop)
-            END
+                MERGE (u)-[:MEMBER_OF]->(coop)
             """
-            session.run(query, user_id=user_id, name=name, county=county, cooperative=cooperative, main_crop=main_crop)
+            session.run(
+                query, 
+                user_id=user_id, 
+                name=name, 
+                phone_number=phone_number, 
+                county=county, 
+                main_crop=main_crop, 
+                cooperative=cooperative
+            )
 
-    def get_similar_farmers(self, county, main_crop, exclude_id):
+    def get_similar_farmers(self, county, main_crop, exclude_phone):
+        """
+        Traverses crop nodes to locate localized smallholders sharing 
+        similar agricultural patterns for peer advisory rendering.
+        """
         with self.driver.session() as session:
-            # Matches peer nodes sharing the same crop or localized ecosystem attributes
             query = """
-            MATCH (f:Farmer)-[:GROWS]->(c:Crop {name: $main_crop})
-            WHERE f.county = $county AND f.id <> $exclude_id
-            RETURN f.name AS name, f.county AS county, c.name AS crop LIMIT 3
+            MATCH (u:User {role: 'farmer'})-[:GROWS]->(c:Crop {name: $main_crop})
+            WHERE u.county = $county AND u.phone_number <> $exclude_phone
+            RETURN u.full_name AS name, u.county AS county, c.name AS crop 
+            LIMIT 3
             """
-            result = session.run(query, county=county, main_crop=main_crop, exclude_id=exclude_id)
+            result = session.run(query, county=county, main_crop=main_crop, exclude_phone=exclude_phone)
             return [record.data() for record in result]
 
-    def create_follow_relationship(self, follower_id, following_id):
+    def create_subscription_relationship(self, subscriber_phone, subscriber_name, farmer_phone, channel='SMS'):
+        """
+        Creates a directed SUBSCRIBED_TO network edge tracking user broadcast profiles.
+        """
         with self.driver.session() as session:
             query = """
-            MATCH (a:Farmer {id: $follower_id}), (b:Farmer {id: $following_id})
-            MERGE (a)-[:FOLLOWS]->(b)
+            MERGE (subscriber:User {phone_number: $subscriber_phone})
+            SET subscriber.full_name = $subscriber_name
+            MERGE (farmer:User {phone_number: $farmer_phone})
+            MERGE (subscriber)-[r:SUBSCRIBED_TO]->(farmer)
+            SET r.channel = $channel
             """
-            session.run(query, follower_id=follower_id, following_id=following_id)
+            session.run(
+                query, 
+                subscriber_phone=subscriber_phone, 
+                subscriber_name=subscriber_name, 
+                farmer_phone=farmer_phone, 
+                channel=channel
+            )
 
     def get_market_buyers(self, crop_name):
+        """
+        Finds open market buyers registered to purchase harvested assets.
+        """
         with self.driver.session() as session:
             query = """
             MATCH (b:Buyer)-[:BUYS]->(c:Crop {name: $crop_name})

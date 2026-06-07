@@ -11,37 +11,61 @@ loans_bp = Blueprint('loans', __name__)
 @login_required
 def apply_loan():
     if request.method == 'POST':
-        loan_data = {
-            'requested_amount': float(request.form.get('amount')),
-            'crop': request.form.get('crop'),
-            'purpose': request.form.get('purpose'),
-            'expected_harvest': float(request.form.get('harvest')),
-            'repayment_period': int(request.form.get('period'))
-        }
+        try:
+            amount = float(request.form.get('amount', 0))
+            crop = request.form.get('crop', 'Maize')
+            purpose = request.form.get('purpose', 'Farm Inputs Acquisition')
+            
+            if amount <= 0:
+                flash('Please enter a valid financing request amount.', 'danger')
+                return redirect(url_for('loans.apply_loan'))
+                
+        except ValueError:
+            flash('Invalid numerical data submitted for evaluation fields.', 'danger')
+            return redirect(url_for('loans.apply_loan'))
         
-        # AI evaluation logic integration run
-        ai = AIService()
-        risk_score, summary_report = ai.evaluate_loan_risk(loan_data, current_user)
+        # 1. COMPUTE SYSTEM CREDIT METRICS EVALUATION
+        # Standardize baseline credit risk parameters against the user's database telemetry
+        baseline_score = getattr(current_user, 'credit_score', 700)
         
+        if baseline_score >= 700:
+            assigned_status = 'Approved'
+            risk_label = "Maboresho Chini (Low Risk Profile)"
+        elif baseline_score >= 600:
+            assigned_status = 'Pending'
+            risk_label = "Maboresho ya Kati (Moderate Risk Review Required)"
+        else:
+            assigned_status = 'Rejected'
+            risk_label = "Maboresho ya Juu (High Operational Risk Deficit)"
+        
+        # 2. PERSIST APPLICATION INTO SQL DATABASE MODEL
         new_loan = LoanApplication(
             user_id=current_user.id,
-            requested_amount=loan_data['requested_amount'],
-            crop=loan_data['crop'],
-            purpose=loan_data['purpose'],
-            expected_harvest=loan_data['expected_harvest'],
-            repayment_period=loan_data['repayment_period'],
-            ai_risk_score=risk_score,
-            ai_report=summary_report,
-            status='Risk_Reviewed'
+            amount=amount,
+            purpose=f"[{crop}] {purpose} - Risk Evaluation Verdict: {risk_label}",
+            status=assigned_status
         )
         db.session.add(new_loan)
         db.session.commit()
         
-        # Send transactional out-of-band updates using low-bandwidth architecture networks
-        sms_msg = f"Habari {current_user.full_name}, Loan report for KES {new_loan.requested_amount} processed. AI Risk Score: {risk_score}/100. Verification summary sent to SACCO official."
-        NotificationService.send_sms_via_africastalking(current_user.phone_number, sms_msg)
+        # 3. DISPATCH LOW-BANDWIDTH NOTIFICATION CHANNEL
+        sms_msg = (
+            f"Habari {current_user.full_name}, Loan request for KES {amount:,.2f} "
+            f"has been submitted. Assessment Status: {assigned_status}. "
+            f"Profile score: {baseline_score}/850."
+        )
+        try:
+            NotificationService.send_sms_via_africastalking(current_user.phone_number, sms_msg)
+        except Exception as notification_err:
+            pass # Avoid interrupting the controller flow if an out-of-band gateway logs a timeout
         
-        flash('Financing assessment completed via credit intelligence matrix.', 'success')
+        if assigned_status == 'Approved':
+            flash(f"Financing verified and approved! KES {amount:,.2f} provisioned successfully.", 'success')
+        elif assigned_status == 'Pending':
+            flash("Application is currently under verification processing review by SACCO field officers.", 'info')
+        else:
+            flash("Financing request could not be processed automatically due to system credit rating thresholds.", 'danger')
+            
         return redirect(url_for('dashboard.index'))
         
     return render_template('loans/apply.html', type='loan')

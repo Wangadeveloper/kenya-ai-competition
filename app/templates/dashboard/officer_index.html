@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-8 py-4">
+    <div class="bg-slate-950 text-white p-8 rounded-3xl relative overflow-hidden shadow-xl border border-slate-900">
+        <div class="relative z-10 max-w-xl">
+            <span class="bg-blue-500/20 text-blue-400 border border-blue-500/30 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Field Operations Center</span>
+            <h2 class="text-2xl sm:text-3xl font-extrabold mt-4">Habari, Agent {{officer.full_name}}</h2>
+            <p class="text-slate-400 text-sm mt-2 leading-relaxed">
+                Assigned Region Strategy: <strong class="text-white">{{ officer.assigned_region }}</strong>. Use this portal to view verified farm coordinates, process credit risk scores, and review dynamic regional telemetry mapping.
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-xs flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                <i data-lucide="users-2"></i>
+            </div>
+            <div>
+                <p class="text-xs text-gray-400 font-medium uppercase">Assigned Farmers</p>
+                <h3 class="text-2xl font-bold mt-0.5">{{ farmers|length }} Active</h3>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-xs flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                <i data-lucide="clipboard-list"></i>
+            </div>
+            <div>
+                <p class="text-xs text-gray-400 font-medium uppercase">Credit Audits Pending</p>
+                <h3 class="text-2xl font-bold mt-0.5">{{ loans|length }} Applications</h3>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-xs flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <i data-lucide="shield-check"></i>
+            </div>
+            <div>
+                <p class="text-xs text-gray-400 font-medium uppercase">Zone Risk Level</p>
+                <h3 class="text-2xl font-bold mt-0.5 text-emerald-600">Stable / Low</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <div>
+                <h3 class="text-base font-bold text-gray-900">Regional Registered Farmers Roster</h3>
+                <p class="text-xs text-gray-500 mt-0.5">Real-time localized audit indexing filtered by your county bounds.</p>
+            </div>
+            <span class="text-xs bg-gray-200/60 font-semibold px-2.5 py-1 rounded-full text-gray-700">Live Sync</span>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-100/70 text-gray-600 uppercase text-[10px] font-bold tracking-wider border-b border-gray-100">
+                        <th class="p-4">Farmer Name</th>
+                        <th class="p-4">Phone Number / Sector</th>
+                        <th class="p-4">Farm Size / Crop</th>
+                        <th class="p-4">Credit Score Baseline</th>
+                        <th class="p-4">Operations Risk Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
+                    {% for f in farmers %}
+                    <tr class="hover:bg-gray-50/50 transition">
+                        <td class="p-4 font-bold text-gray-900">{{ f.full_name }}</td>
+                        <td class="p-4 font-mono text-xs">{{ f.phone_number }}<br><span class="text-gray-400">{{ f.sub_county }}</span></td>
+                        <td class="p-4 font-medium">{{ f.farm_size }} Acres <br><span class="text-xs text-emerald-600 font-bold bg-emerald-50 px-1.5 rounded">{{ f.primary_crop }}</span></td>
+                        <td class="p-4 font-bold tracking-tight text-slate-800">{{ f.credit_score }} / 850 Rating</td>
+                        <td class="p-4">
+                            {% if f.credit_score < 650 %}
+                            <span class="inline-block text-[10px] font-extrabold bg-rose-100 text-rose-800 px-2.5 py-0.5 rounded-full border border-rose-200">High Risk Advisory</span>
+                            {% elif f.credit_score < 750 %}
+                            <span class="inline-block text-[10px] font-extrabold bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full border border-amber-200">Moderate Cycles</span>
+                            {% else %}
+                            <span class="inline-block text-[10px] font-extrabold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-200">Low Risk Approved</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="p-8 text-center text-sm text-gray-400">No regional farmers registered under your active county tracking parameters yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,30 +1,76 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+import io
+import markdown
+from datetime import datetime
+from flask import Blueprint, render_template, request, redirect, url_for, flash, Response
 from flask_login import login_required, current_user
+from markupsafe import Markup
+from xhtml2pdf import pisa
+
 from app.extensions import db
-from app.models.sql_models import FarmPlan, LoanApplication, Post
+from app.models.sql_models import User, FarmPlan, LoanApplication, Post
+
+# Required Graph Network and AI Intelligence Services
 from app.services.ai_service import AIService
 from app.services.neo4j_service import Neo4jService
 
 dashboard_bp = Blueprint('dashboard', __name__)
-import markdown
-from markupsafe import Markup
-from app.dashboard.routes import dashboard_bp
-
-@dashboard_bp.app_template_filter('render_markdown')
-def render_markdown_filter(text):
-    if not text:
-        return ""
-    html_content = markdown.markdown(text, extensions=['extra'])
-    return Markup(html_content)
 
 @dashboard_bp.route('/')
+def home():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard.index'))
+    return render_template('home.html')
+
+@dashboard_bp.route('/dashboard')
 @login_required
 def index():
-    # Fetch user telemetry attributes
+    """
+    Role-Based Dashboard Switchboard Router leveraging Neo4j Graph Context.
+    """
+    # CASE A: Render Field Officer Core Portal
+    if current_user.role == 'officer':
+        # Retrieve regional telemetry matching the officer's regional assignments
+        farmers_in_region = User.query.filter_by(role='farmer', county=current_user.county).all()
+        
+        # Pull latest loans across the officer's assigned county using your specific database relationship structure
+        pending_loans = LoanApplication.query.join(User, LoanApplication.user_id == User.id)\
+            .filter(User.county == current_user.county)\
+            .order_by(LoanApplication.created_at.desc())\
+            .limit(10).all()
+        
+        return render_template(
+            'dashboard/officer_index.html',
+            officer=current_user,
+            farmers=farmers_in_region,
+            loans=pending_loans
+        )
+        
+    # CASE B: Render Traditional Farmer Personal Hub with Graph-Enriched Feed
+    # Aligned with your backref 'applicant' or strict lookup structure
     loan_widget = LoanApplication.query.filter_by(user_id=current_user.id).order_by(LoanApplication.created_at.desc()).first()
-    posts = Post.query.order_by(Post.created_at.desc()).limit(5).all()
     
-    # Simple static sample feed for regional pricing trends lookup
+    # ADVANCED GRAPH INTEGRATION: Extract contextual personalized feeds via Neo4j Graph
+    feed_posts = []
+    try:
+        ns = Neo4jService()
+        # Fall back cleanly to 'Maize' if current_user.primary_crop isn't specified
+        farmer_crop = current_user.primary_crop or 'Maize'
+        similar_peers = ns.get_similar_farmers(current_user.county, farmer_crop, current_user.phone_number)
+        ns.close()
+        
+        if similar_peers:
+            # Query relational posts whose authors match peer profiles in the localized network area
+            peer_names = [peer['name'] for peer in similar_peers]
+            feed_posts = Post.query.join(User).filter(
+                User.full_name.in_(peer_names) | (User.county == current_user.county)
+            ).order_by(Post.created_at.desc()).limit(5).all()
+    except Exception:
+        # Fail-soft fallback boundary to safeguard network uptime
+        pass
+
+    if not feed_posts:
+        feed_posts = Post.query.order_by(Post.created_at.desc()).limit(5).all()
+    
     market_snapshot = [
         {"crop": "Beans (Yellow Bean)", "price": "12,500 KES / Bag", "trend": "Up (+4%)"},
         {"crop": "Maize (White)", "price": "3,400 KES / Bag", "trend": "Down (-2%)"},
@@ -32,73 +78,75 @@ def index():
     ]
     
     return render_template(
-        'dashboard/index.html', 
-        user=current_user, 
+        'dashboard/farmer_index.html', 
+        farmer=current_user, 
         loan=loan_widget, 
-        feed=posts, 
+        feed=feed_posts, 
         markets=market_snapshot
     )
+
+
+# ... inside app/dashboard/routes.py ...
 
 @dashboard_bp.route('/plan', methods=['GET', 'POST'])
 @login_required
 def plan_season():
     if request.method == 'POST':
-        data = {
-            "crop_type": request.form.get('crop_type'),
+        submitted_crop = request.form.get('crop_type') or current_user.primary_crop or 'Maize'
+        submitted_budget = float(request.form.get('budget') or 0)
+        
+        ai_payload = {
+            "crop_type": submitted_crop,
             "county": current_user.county,
-            "farm_size": float(request.form.get('farm_size', current_user.farm_size)),
-            "budget": float(request.form.get('budget')),
-            "irrigation_type": request.form.get('irrigation_type'),
-            "expected_loan": float(request.form.get('expected_loan', 0))
+            "farm_size": float(request.form.get('farm_size') or current_user.farm_size or 1.0),
+            "budget": submitted_budget,
+            "irrigation_type": request.form.get('irrigation_type') or current_user.water_source or 'Rain-fed',
+            "expected_loan": float(request.form.get('expected_loan') or 0)
         }
         
-        # 1. Fetch data from Neo4j Social Graph network context
         try:
             ns = Neo4jService()
-            similar_peers = ns.get_similar_farmers(data['county'], data['crop_type'], current_user.id)
+            similar_peers = ns.get_similar_farmers(ai_payload['county'], ai_payload['crop_type'], current_user.phone_number)
             ns.close()
         except Exception:
             similar_peers = []
             
-        # 2. Extract synthesized inference response using Gemini Architecture Engine
         ai = AIService()
-        recommendation_text = ai.generate_farm_advisory(data, similar_peers)
+        recommendation_text = ai.generate_farm_advisory(ai_payload, similar_peers)
         
-        # Save structural tracking state
+        # 1. FIXED: Convert the raw Markdown string to clean, safe HTML strings here
+        html_advisory = markdown.markdown(recommendation_text, extensions=['extra'])
+        safe_html_advisory = Markup(html_advisory)
+        
+        current_year = datetime.utcnow().year
         new_plan = FarmPlan(
             user_id=current_user.id,
-            crop_type=data['crop_type'],
-            budget=data['budget'],
-            farm_size=data['farm_size'],
-            irrigation_type=data['irrigation_type'],
-            expected_loan=data['expected_loan'],
-            ai_recommendation=recommendation_text
+            season_name=f"Long Rains Season {current_year}",
+            crop_to_plant=submitted_crop,
+            estimated_budget=submitted_budget,
+            ai_recommendations=recommendation_text  # Keep raw markdown stored in the database
         )
+        
         db.session.add(new_plan)
         db.session.commit()
         
         flash('Seasonal farming strategy processed successfully.', 'success')
-        return render_template('loans/advisory.html', content=recommendation_text, plan=new_plan)
+        
+        # 2. FIXED: Pass the clean 'safe_html_advisory' down to your template variable context
+        return render_template('loans/advisory.html', content=safe_html_advisory, plan=new_plan)
 
     return render_template('loans/apply.html', type='plan')
-
-from flask import Response
-from xhtml2pdf import pisa
-import io
-import markdown # Imported to parse markdown structure before making the PDF
-
-# ... keep your existing index() and plan_season() routes exactly as they are ...
 
 @dashboard_bp.route('/plan/download/<int:plan_id>')
 @login_required
 def download_pdf(plan_id):
-    # 1. Fetch the requested farming plan safely
+    # 1. Fetch requested farming plan safely matching the authenticated login identifier
     plan = FarmPlan.query.filter_by(id=plan_id, user_id=current_user.id).first_or_404()
     
-    # 2. Parse raw Gemini Markdown recommendation into structured HTML strings
-    parsed_html_advisory = markdown.markdown(plan.ai_recommendation, extensions=['extra'])
+    # 2. Parse raw Gemini Markdown advisory text using your model's exact 'ai_recommendations' field
+    parsed_html_advisory = markdown.markdown(plan.ai_recommendations or "No advisory text found.", extensions=['extra'])
     
-    # 3. Create a clean, structural layout template specifically for printing
+    # 3. Create a clean, structural layout template ready for print streaming
     pdf_html_layout = f"""
     <html>
     <head>
@@ -117,10 +165,10 @@ def download_pdf(plan_id):
     </head>
     <body>
         <div class="header">
-            <div class="title">AgriFinance Seasonal Farm Strategy</div>
+            <div class="title">AgriFinance Seasonal Farm Strategy ({plan.season_name})</div>
             <div class="meta">Mkulima: {current_user.full_name} | Simu: {current_user.phone_number}</div>
-            <div class="meta">Eneo: {current_user.county} County | Ukubwa wa Shamba: {plan.farm_size} Acres</div>
-            <div class="meta">Zao Kuu: {plan.crop_type} | Bajeti Imepangiwa: KES {plan.budget:,.2f}</div>
+            <div class="meta">Eneo: {current_user.county} County | Ukubwa wa Shamba: {current_user.farm_size} Acres</div>
+            <div class="meta">Zao Kuu: {plan.crop_to_plant} | Bajeti Imepangiwa: KES {plan.estimated_budget:,.2f}</div>
         </div>
         <div>
             {parsed_html_advisory}
@@ -129,7 +177,7 @@ def download_pdf(plan_id):
     </html>
     """
     
-    # 4. Stream the compiled PDF binary back to the client browser agent
+    # 4. Stream compiled binary PDF back to user agent browser channels
     pdf_buffer = io.BytesIO()
     pisa_status = pisa.CreatePDF(pdf_html_layout, dest=pdf_buffer)
     
@@ -141,5 +189,5 @@ def download_pdf(plan_id):
     return Response(
         pdf_buffer.getvalue(),
         mimetype='application/pdf',
-        headers={"Content-Disposition": f"attachment;filename=Mkakati_Msimu_Plan_{plan.id}.pdf"}
+        headers={"Content-Disposition": f"attachment;filename=Mkakati_{plan.crop_to_plant}_{plan.id}.pdf"}
     )
