@@ -2,15 +2,20 @@
 
 {% block content %}
 <div class="space-y-8 py-4">
-    <div class="bg-slate-950 text-white p-8 rounded-3xl relative overflow-hidden shadow-xl border border-slate-900">
+    <!-- Updated to use the emerald/teal gradient background -->
+    <div class="bg-gradient-to-r from-emerald-800 to-teal-900 text-white p-8 rounded-3xl relative overflow-hidden shadow-xl border border-emerald-950/20">
         <div class="relative z-10 max-w-xl">
-            <span class="bg-blue-500/20 text-blue-400 border border-blue-500/30 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Field Operations Center</span>
+            <!-- Adjusted badge to blend naturally with the new green background -->
+            <span class="bg-white/10 text-emerald-200 border border-white/20 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                Field Operations Center
+            </span>
             <h2 class="text-2xl sm:text-3xl font-extrabold mt-4">Habari, Agent {{officer.full_name}}</h2>
-            <p class="text-slate-400 text-sm mt-2 leading-relaxed">
+            <p class="text-emerald-100 text-sm mt-2 leading-relaxed">
                 Assigned Region Strategy: <strong class="text-white">{{ officer.assigned_region }}</strong>. Use this portal to view verified farm coordinates, process credit risk scores, and review dynamic regional telemetry mapping.
             </p>
         </div>
     </div>
+</div>
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-xs flex items-center gap-4">
@@ -42,13 +47,19 @@
         </div>
     </div>
 
+    <!-- REGIONAL FARMERS MATRIX ROSTER -->
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
             <div>
                 <h3 class="text-base font-bold text-gray-900">Regional Registered Farmers Roster</h3>
                 <p class="text-xs text-gray-500 mt-0.5">Real-time localized audit indexing filtered by your county bounds.</p>
             </div>
-            <span class="text-xs bg-gray-200/60 font-semibold px-2.5 py-1 rounded-full text-gray-700">Live Sync</span>
+            <div class="flex items-center gap-3">
+                <button onclick="openRegisterModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition cursor-pointer flex items-center gap-1">
+                    <span>➕</span> Register Farmer
+                </button>
+                <span class="text-xs bg-gray-200/60 font-semibold px-2.5 py-1 rounded-full text-gray-700">Live Sync</span>
+            </div>
         </div>
         
         <div class="overflow-x-auto">
@@ -56,16 +67,28 @@
                 <thead>
                     <tr class="bg-gray-100/70 text-gray-600 uppercase text-[10px] font-bold tracking-wider border-b border-gray-100">
                         <th class="p-4">Farmer Name</th>
+                        <th class="p-4">Cooperative SACCO Group</th>
                         <th class="p-4">Phone Number / Sector</th>
                         <th class="p-4">Farm Size / Crop</th>
                         <th class="p-4">Credit Score Baseline</th>
                         <th class="p-4">Operations Risk Status</th>
+                        <th class="p-4 text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
                     {% for f in farmers %}
                     <tr class="hover:bg-gray-50/50 transition">
                         <td class="p-4 font-bold text-gray-900">{{ f.full_name }}</td>
+                        <!-- SACCO Relation Resolution Metadata Block -->
+                        <td class="p-4">
+                            {% if f.sacco %}
+                            <span class="text-xs font-bold text-slate-800 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg">
+                                🏢 {{ f.sacco.name }}
+                            </span>
+                            {% else %}
+                            <span class="text-xs text-gray-400 italic">No Registered Affiliation</span>
+                            {% endif %}
+                        </td>
                         <td class="p-4 font-mono text-xs">{{ f.phone_number }}<br><span class="text-gray-400">{{ f.sub_county }}</span></td>
                         <td class="p-4 font-medium">{{ f.farm_size }} Acres <br><span class="text-xs text-emerald-600 font-bold bg-emerald-50 px-1.5 rounded">{{ f.primary_crop }}</span></td>
                         <td class="p-4 font-bold tracking-tight text-slate-800">{{ f.credit_score }} / 850 Rating</td>
@@ -78,10 +101,18 @@
                             <span class="inline-block text-[10px] font-extrabold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-200">Low Risk Approved</span>
                             {% endif %}
                         </td>
+                        <td class="p-4 text-right flex justify-end gap-2">
+                            <button onclick="openYieldModal('{{ f.id }}', '{{ f.full_name }}', '{{ f.primary_crop or 'Maize' }}')" class="bg-teal-600 hover:bg-teal-700 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1">
+                                <span>📊</span> Yield
+                            </button>
+                            <button onclick="openCopilotModal('{{ f.id }}', '{{ f.full_name }}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1">
+                                <span>🤖</span> AI Brief
+                            </button>
+                        </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="5" class="p-8 text-center text-sm text-gray-400">No regional farmers registered under your active county tracking parameters yet.</td>
+                        <td colspan="7" class="p-8 text-center text-sm text-gray-400">No regional farmers registered under your active county tracking parameters yet.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -89,4 +120,202 @@
         </div>
     </div>
 </div>
+
+<!-- Register Farmer Modal -->
+<div id="registerModal" class="fixed inset-0 z-50 hidden bg-black/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 overflow-y-auto max-h-[90vh]">
+        <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
+            <h3 class="font-bold text-gray-800 text-lg">Register New Farmer</h3>
+            <button onclick="closeRegisterModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+        </div>
+        <form action="{{ url_for('dashboard.officer_register_farmer') }}" method="POST" class="space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 block mb-1">Username</label>
+                    <input type="text" name="username" required class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 block mb-1">Email</label>
+                    <input type="email" name="email" required class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 block mb-1">Full Name</label>
+                    <input type="text" name="full_name" required class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 block mb-1">Phone Number (+254...)</label>
+                    <input type="text" name="phone_number" placeholder="+254" required class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 block mb-1">County</label>
+                    <input type="text" name="county" value="{{ officer.county }}" required class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 block mb-1">Sub-County</label>
+                    <input type="text" name="sub_county" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 block mb-1">Ward</label>
+                    <input type="text" name="ward" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 block mb-1">National ID</label>
+                    <input type="text" name="national_id" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 block mb-1">SACCO Cooperative</label>
+                    <input type="text" name="sacco_name" placeholder="e.g. Kakamega Cooperative SACCO" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 block mb-1">Primary Crop</label>
+                    <input type="text" name="primary_crop" required class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 block mb-1">Farm Size (Acres)</label>
+                    <input type="number" step="0.1" name="farm_size" required class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 block mb-1">Soil Type</label>
+                    <select name="soil_type" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none cursor-pointer">
+                        <option value="Clay loam">Clay loam</option>
+                        <option value="Sandy loam">Sandy loam</option>
+                        <option value="Black cotton">Black cotton</option>
+                        <option value="Silt loam">Silt loam</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 block mb-1">Irrigation Type</label>
+                    <select name="irrigation_type" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none cursor-pointer">
+                        <option value="Rain-fed">Rain-fed Lifecycle</option>
+                        <option value="Drip System">Drip Irrigation</option>
+                        <option value="Borehole Pumping">Borehole Pumping</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3 rounded-xl transition cursor-pointer">
+                Submit Farmer Registration
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Upload Yield Modal -->
+<div id="yieldModal" class="fixed inset-0 z-50 hidden bg-black/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100">
+        <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
+            <h3 class="font-bold text-gray-800 text-lg">Upload Yield Data</h3>
+            <button onclick="closeYieldModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+        </div>
+        <form action="{{ url_for('dashboard.officer_upload_yield') }}" method="POST" class="space-y-3">
+            <input type="hidden" name="farmer_id" id="yield_farmer_id">
+            <div>
+                <label class="text-[10px] font-bold text-gray-500 block mb-1">Farmer Name</label>
+                <input type="text" id="yield_farmer_name" disabled class="w-full bg-gray-100 border border-gray-200 rounded-lg p-2 text-xs focus:outline-none text-gray-500">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 block mb-1">Crop Name</label>
+                    <input type="text" name="crop_name" id="yield_crop_name" required class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 block mb-1">Season Name</label>
+                    <input type="text" name="season_name" value="Long Rains 2026" required class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 block mb-1">Acreage</label>
+                    <input type="number" step="0.1" name="acreage" required class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 block mb-1">Yield (KG)</label>
+                    <input type="number" step="0.1" name="yield_kg" required class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 block mb-1">Revenue (KES)</label>
+                    <input type="number" step="0.1" name="revenue" required class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                </div>
+            </div>
+            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3 rounded-xl transition cursor-pointer">
+                Submit Yield Record
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Copilot Dossier Modal -->
+<div id="copilotModal" class="fixed inset-0 z-50 hidden bg-black/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100">
+        <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
+            <h3 class="font-bold text-gray-800 text-lg flex items-center gap-1.5">
+                🤖 AgriNexus AI Pre-Visit Dossier
+            </h3>
+            <button onclick="closeCopilotModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Farmer Target</span>
+                <strong class="text-sm font-bold text-gray-900" id="copilot_farmer_name">...</strong>
+            </div>
+            <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-xs text-emerald-800 leading-relaxed min-h-[100px] flex items-center justify-center" id="copilot_dossier_text">
+                <span class="italic text-gray-400">Loading AI Briefing Dossier...</span>
+            </div>
+            <button onclick="closeCopilotModal()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-xs py-3 rounded-xl transition cursor-pointer">
+                Close Dossier
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript to control modals -->
+<script>
+function openRegisterModal() {
+    document.getElementById('registerModal').classList.remove('hidden');
+}
+function closeRegisterModal() {
+    document.getElementById('registerModal').classList.add('hidden');
+}
+
+function openYieldModal(farmerId, farmerName, cropName) {
+    document.getElementById('yield_farmer_id').value = farmerId;
+    document.getElementById('yield_farmer_name').value = farmerName;
+    document.getElementById('yield_crop_name').value = cropName;
+    document.getElementById('yieldModal').classList.remove('hidden');
+}
+function closeYieldModal() {
+    document.getElementById('yieldModal').classList.add('hidden');
+}
+
+function openCopilotModal(farmerId, farmerName) {
+    document.getElementById('copilot_farmer_name').innerText = farmerName;
+    document.getElementById('copilot_dossier_text').innerHTML = '<span class="italic text-gray-400">Loading AI Briefing Dossier...</span>';
+    document.getElementById('copilotModal').classList.remove('hidden');
+    
+    fetch('/officer/copilot/' + farmerId)
+        .then(response => response.json())
+        .then(data => {
+            if (data.dossier) {
+                document.getElementById('copilot_dossier_text').innerHTML = '<p class="whitespace-pre-line">' + data.dossier + '</p>';
+            } else {
+                document.getElementById('copilot_dossier_text').innerHTML = '<span class="text-rose-500">Failed to load briefing.</span>';
+            }
+        })
+        .catch(err => {
+            document.getElementById('copilot_dossier_text').innerHTML = '<span class="text-rose-500">Error loading briefing.</span>';
+        });
+}
+function closeCopilotModal() {
+    document.getElementById('copilotModal').classList.add('hidden');
+}
+</script>
 {% endblock %}

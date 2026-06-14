@@ -6,12 +6,8 @@
     <div class="mb-6 sm:mb-8">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-                <h2 class="text-2xl sm:text-3xl font-bold text-gray-800">
-                    Community Feed
-                </h2>
-                <p class="text-sm text-gray-500 mt-1">
-                    Share farming knowledge, updates, and success stories with your local ecosystem.
-                </p>
+                <h2 class="text-2xl sm:text-3xl font-bold text-gray-800">Community Feed</h2>
+                <p class="text-sm text-gray-500 mt-1">Share farming knowledge, updates, and success stories with your local ecosystem.</p>
             </div>
             <div class="bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-2xl text-sm text-emerald-700 font-medium w-fit">
                 🌱 Farmer Knowledge Network
@@ -19,18 +15,13 @@
         </div>
     </div>
 
+    <!-- SHARE POST INTERFACE -->
     <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 sm:p-6 mb-8">
         <div class="flex items-center gap-3 mb-5">
-            <div class="w-11 h-11 rounded-2xl bg-emerald-100 flex items-center justify-center text-lg">
-                ✍️
-            </div>
+            <div class="w-11 h-11 rounded-2xl bg-emerald-100 flex items-center justify-center text-lg">✍️</div>
             <div>
-                <h3 class="text-base sm:text-lg font-bold text-gray-800">
-                    Share Updates
-                </h3>
-                <p class="text-xs sm:text-sm text-gray-500">
-                    Elimu na Mafanikio ya Mkulima
-                </p>
+                <h3 class="text-base sm:text-lg font-bold text-gray-800">Share Updates</h3>
+                <p class="text-xs sm:text-sm text-gray-500">Elimu na Mafanikio ya Mkulima</p>
             </div>
         </div>
 
@@ -47,9 +38,7 @@
 
             <div>
                 <div class="relative rounded-2xl shadow-sm">
-                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-base">
-                        📺
-                    </div>
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-base">📺</div>
                     <input
                         type="url"
                         name="youtube_url"
@@ -78,14 +67,11 @@
     </div>
 
     <div class="flex items-center justify-between mb-4">
-        <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-500">
-            Ecosystem Peer Updates
-        </h3>
-        <span class="text-xs text-gray-400">
-            Community Activity
-        </span>
+        <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-500">Ecosystem Peer Updates</h3>
+        <span class="text-xs text-gray-400">Community Activity</span>
     </div>
 
+    <!-- POST FEED RENDER ENGINE -->
     <div class="space-y-5">
         {% for post in posts %}
         <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 sm:p-6 hover:shadow-md transition">
@@ -95,14 +81,16 @@
                     <div class="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center text-lg font-bold text-emerald-700 shrink-0">
                         {{ post.author.full_name[0] }}
                     </div>
-
                     <div>
-                        <h4 class="text-sm sm:text-base font-bold text-gray-800">
-                            {{ post.author.full_name }}
-                        </h4>
-                        <p class="text-xs text-gray-400 mt-1">
-                            📍 {{ post.county_tag }} Cluster
-                        </p>
+                        <h4 class="text-sm sm:text-base font-bold text-gray-800">{{ post.author.full_name }}</h4>
+                        <div class="flex items-center gap-2 mt-1 flex-wrap">
+                            <span class="text-xs text-gray-400">📍 {{ post.county_tag }} Cluster</span>
+                            {% if post.author.sacco %}
+                            <span class="text-[10px] bg-slate-100 text-slate-700 font-medium px-2 py-0.5 rounded border border-slate-200">
+                                🏢 {{ post.author.sacco.name }}
+                            </span>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
 
@@ -128,11 +116,10 @@
             </div>
 
             <div class="mb-4">
-                <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-                    {{ post.content }}
-                </p>
+                <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{{ post.content }}</p>
             </div>
 
+            <!-- GEMINI MULTIMODAL VIDEO SUMMARIZATION CARD -->
             {% if post.youtube_url %}
             <div class="mb-5 bg-gradient-to-br from-red-50 to-orange-50 border border-red-100/60 rounded-2xl p-4">
                 <div class="flex items-center gap-2 text-red-700 text-xs font-bold uppercase tracking-wider mb-2">
@@ -147,9 +134,10 @@
                     <p class="text-xs font-bold text-amber-800 flex items-center gap-1 mb-1">
                         ✨ AI Ushauri Video Summary:
                     </p>
-                    <p class="text-xs text-gray-600 italic leading-relaxed">
-                        "{{ post.video_summary }}"
-                    </p>
+                    <!-- Render structured rich markdown directly out of graph properties safely -->
+                    <div class="text-xs text-gray-600 leading-relaxed prose prose-sm max-w-none">
+                        {{ post.video_summary | safe }}
+                    </div>
                 </div>
                 {% endif %}
             </div>
@@ -157,33 +145,50 @@
 
             <div class="flex items-center gap-6 pt-4 border-t border-gray-100">
                 <button class="flex items-center gap-2 text-sm text-gray-500 hover:text-emerald-600 transition font-medium cursor-pointer">
-                    <span class="text-lg">👍</span>
-                    <span>Like</span>
+                    <span class="text-lg">👍</span> <span>Like</span>
                 </button>
                 <button class="flex items-center gap-2 text-sm text-gray-500 hover:text-emerald-600 transition font-medium cursor-pointer">
-                    <span class="text-lg">💬</span>
-                    <span>Comment</span>
+                    <span class="text-lg">💬</span> <span>Comment</span>
                 </button>
                 <button class="flex items-center gap-2 text-sm text-gray-500 hover:text-emerald-600 transition font-medium ml-auto cursor-pointer">
-                    <span class="text-lg">🔗</span>
-                    <span>Share</span>
+                    <span class="text-lg">🔗</span> <span>Share</span>
                 </button>
+            </div>
+
+            <!-- Comments Section -->
+            <div class="mt-4 pt-4 border-t border-gray-50 space-y-4">
+                {% set comments = post.comments_list.all() %}
+                {% if comments %}
+                <div class="space-y-3 pl-4 border-l-2 border-emerald-50">
+                    {% for comment in comments %}
+                    <div class="text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-gray-800">{{ comment.commenter.full_name }}</span>
+                            <span class="text-gray-400 font-mono">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </div>
+                        <p class="text-gray-650 mt-1">{{ comment.body }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Comment Form -->
+                <form method="POST" action="{{ url_for('community.comment', post_id=post.id) }}" class="flex items-center gap-2 mt-3">
+                    <input type="text" name="body" placeholder="Write a comment..." class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500" required>
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition cursor-pointer">
+                        Comment
+                    </button>
+                </form>
             </div>
 
         </div>
         {% else %}
-
         <div class="bg-white rounded-3xl border border-dashed border-gray-200 p-10 text-center shadow-sm">
-            <div class="text-5xl mb-4">
-                🌾
-            </div>
-            <h4 class="text-lg font-bold text-gray-700 mb-2">
-                No Community Updates Yet
-            </h4>
+            <div class="text-5xl mb-4">🌾</div>
+            <h4 class="text-lg font-bold text-gray-700 mb-2">No Community Updates Yet</h4>
             <p class="text-sm text-gray-400 max-w-md mx-auto leading-relaxed">
-                No regional activity reported in your current crop zone network footprint yet.
-                Be the first farmer to share knowledge with the community.
-                </p>
+                No regional activity reported in your current crop zone network footprint yet. Be the first farmer to share knowledge with the community.
+            </p>
         </div>
         {% endfor %}
     </div>

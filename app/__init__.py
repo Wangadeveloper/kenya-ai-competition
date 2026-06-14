@@ -23,9 +23,13 @@ def create_app(config_class=Config):
     from app.dashboard.routes import dashboard_bp
     from app.loans.routes import loans_bp
     from app.community.routes import community_bp
+    from app.ussd.routes import ussd_bp
+    
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(dashboard_bp, url_prefix='/')
     app.register_blueprint(loans_bp, url_prefix='/loans')
     app.register_blueprint(community_bp, url_prefix='/community')
+    app.register_blueprint(ussd_bp, url_prefix='/ussd')
+
 
     return app

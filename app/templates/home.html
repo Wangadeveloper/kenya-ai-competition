@@ -1,136 +1,157 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<section class="relative bg-emerald-900 text-white overflow-hidden py-20 lg:py-32">
-    <div class="absolute inset-0 opacity-20 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-        <div>
-            <span class="bg-emerald-800/80 text-emerald-300 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">Next-Gen Agritech</span>
-            <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight mt-4 leading-tight">
-                Personalized Agricultural Intelligence platform
+
+<!-- Hero Section -->
+<section class="relative bg-emerald-900 text-white overflow-hidden py-20 lg:py-28">
+    <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:18px_18px]"></div>
+
+    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <!-- Hero Text -->
+        <div class="text-center max-w-4xl mx-auto">
+            <span class="inline-block bg-emerald-800/70 text-emerald-300 text-xs font-semibold px-4 py-1 rounded-full uppercase tracking-widest">
+                Next-Gen Agritech
+            </span>
+
+            <h1 class="mt-6 text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
+                Personalized Agricultural Intelligence Platform
             </h1>
-            <p class="mt-6 text-lg text-emerald-100 max-w-xl">
-                Empowering farmers and field officers with robust AI recommendations, automated planning, and intuitive graph intelligence. 
+
+            <p class="mt-6 text-lg sm:text-xl text-emerald-100 max-w-3xl mx-auto">
+                Empowering farmers and field officers with robust AI recommendations,
+                automated planning, and intuitive graph intelligence.
             </p>
-            <div class="mt-10 flex flex-wrap gap-4">
-                <a href="{{ url_for('auth.register') }}" class="bg-white text-emerald-900 font-semibold px-6 py-3 rounded-xl hover:bg-emerald-50 transition shadow-lg">
+
+            <div class="mt-10 flex flex-wrap justify-center gap-4">
+                <a href="{{ url_for('auth.register') }}"
+                    class="bg-white text-emerald-900 font-semibold px-6 py-3 rounded-xl hover:bg-emerald-50 transition shadow-lg">
                     Get Started Free
                 </a>
-                <a href="#services" class="border border-emerald-400/40 text-white font-semibold px-6 py-3 rounded-xl hover:bg-emerald-800/50 transition">
+
+                <a href="#services"
+                    class="border border-emerald-400/40 text-white font-semibold px-6 py-3 rounded-xl hover:bg-emerald-800/50 transition">
                     Explore Services
                 </a>
             </div>
         </div>
-        <div class="grid grid-cols-3 gap-4 h-72 sm:h-96">
-            <div class="rounded-2xl overflow-hidden shadow-md transform translate-y-4 transition hover:scale-105">
-                <img src="https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&q=80&w=600" alt="Lush Farm Crops" class="w-full h-full object-cover">
+
+        <!-- Hero Images -->
+        <div class="mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <div class="group overflow-hidden rounded-3xl shadow-2xl h-72">
+                <img src="{{ url_for('static', filename='img/afri.png') }}"
+                    alt="Farm Landscape"
+                    class="w-full h-full object-cover transition duration-500 group-hover:scale-110">
             </div>
-            <div class="rounded-2xl overflow-hidden shadow-md transition hover:scale-105">
-                <img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad451?auto=format&fit=crop&q=80&w=600" alt="Farmer Checking Field" class="w-full h-full object-cover">
+
+            <div class="group overflow-hidden rounded-3xl shadow-2xl h-72">
+                <img src="{{ url_for('static', filename='img/kenyan-farmer.jpg') }}"
+                    alt="Farmer Working"
+                    class="w-full h-full object-cover transition duration-500 group-hover:scale-110">
             </div>
-            <div class="rounded-2xl overflow-hidden shadow-md transform translate-y-8 transition hover:scale-105">
-                <img src="https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&q=80&w=600" alt="Smart Agriculture Tech" class="w-full h-full object-cover">
+
+            <div class="group overflow-hidden rounded-3xl shadow-2xl h-72 sm:col-span-2 lg:col-span-1">
+                <img src="{{ url_for('static', filename='img/saving.jpg') }}"
+                    alt="Smart Agriculture"
+                    class="w-full h-full object-cover transition duration-500 group-hover:scale-110">
             </div>
+
         </div>
+
     </div>
 </section>
 
-<section id="services" class="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="text-center max-w-3xl mx-auto">
-        <h2 class="text-3xl font-bold text-gray-900 tracking-tight">Everything You Need To Thrive</h2>
-        <p class="mt-4 text-gray-600">Bringing real data structure, field operational synchronization, and deep intelligence layers into your agricultural business.</p>
-    </div>
+<!-- Services Section -->
+<section id="services" class="py-20 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-16">
-        <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition flex flex-col justify-between">
-            <div>
+        <div class="text-center max-w-3xl mx-auto">
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">
+                Everything You Need To Thrive
+            </h2>
+            <p class="mt-4 text-lg text-gray-600">
+                Bringing real data structure, field operational synchronization,
+                and deep intelligence layers into your agricultural business.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-16">
+
+            <!-- Card 1 -->
+            <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition duration-300">
                 <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-6">
                     <i data-lucide="cpu"></i>
                 </div>
                 <h3 class="text-xl font-bold text-gray-900">AI Advisory Hub</h3>
-                <p class="mt-3 text-gray-600 text-sm leading-relaxed">
-                    Get pinpoint answers powered by Gemini AI regarding seed selection, targeted fertilizers, and crop diagnostics[cite: 33, 35, 43].
+                <p class="mt-3 text-gray-600 leading-relaxed">
+                    Get intelligent recommendations on crop selection, fertilizer
+                    usage, disease diagnosis, and farm management powered by AI.
                 </p>
             </div>
-            <a href="{{ url_for('auth.register') }}" class="mt-6 text-emerald-600 hover:text-emerald-700 font-semibold text-sm inline-flex items-center gap-1">
-                Learn More <i data-lucide="arrow-right" class="w-4 h-4"></i>
-            </a>
-        </div>
 
-        <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition flex flex-col justify-between">
-            <div>
+            <!-- Card 2 -->
+            <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition duration-300">
                 <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-6">
                     <i data-lucide="calendar"></i>
                 </div>
                 <h3 class="text-xl font-bold text-gray-900">Seasonal Planner</h3>
-                <p class="mt-3 text-gray-600 text-sm leading-relaxed">
-                    Automatically map your land prep, top-dressing milestones, pest alerts, and dynamic budget metrics generated by AI[cite: 45, 47, 51, 56].
+                <p class="mt-3 text-gray-600 leading-relaxed">
+                    Schedule planting, fertilization, harvesting, and pest
+                    management activities with AI-generated timelines.
                 </p>
             </div>
-            <a href="{{ url_for('auth.register') }}" class="mt-6 text-emerald-600 hover:text-emerald-700 font-semibold text-sm inline-flex items-center gap-1">
-                Learn More <i data-lucide="arrow-right" class="w-4 h-4"></i>
-            </a>
-        </div>
 
-        <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition flex flex-col justify-between">
-            <div>
+            <!-- Card 3 -->
+            <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition duration-300">
                 <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-6">
                     <i data-lucide="wallet"></i>
                 </div>
                 <h3 class="text-xl font-bold text-gray-900">Credit & Loan Tracking</h3>
-                <p class="mt-3 text-gray-600 text-sm leading-relaxed">
-                    Apply transparently based on digitized harvest verification, check credit score insights, and track upcoming repayments[cite: 71, 73, 74].
+                <p class="mt-3 text-gray-600 leading-relaxed">
+                    Monitor agricultural loans, repayment schedules, and
+                    financing opportunities with transparent insights.
                 </p>
             </div>
-            <a href="{{ url_for('auth.register') }}" class="mt-6 text-emerald-600 hover:text-emerald-700 font-semibold text-sm inline-flex items-center gap-1">
-                Learn More <i data-lucide="arrow-right" class="w-4 h-4"></i>
-            </a>
-        </div>
 
-        <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition flex flex-col justify-between">
-            <div>
+            <!-- Card 4 -->
+            <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition duration-300">
                 <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-6">
                     <i data-lucide="users"></i>
                 </div>
                 <h3 class="text-xl font-bold text-gray-900">Graph Community Hub</h3>
-                <p class="mt-3 text-gray-600 text-sm leading-relaxed">
-                    Connect directly to local sub-county groups and share insights structured inside complex Neo4j relationship maps[cite: 19, 79, 194].
+                <p class="mt-3 text-gray-600 leading-relaxed">
+                    Connect farmers, agronomists, cooperatives, and extension
+                    officers through intelligent graph relationships.
                 </p>
             </div>
-            <a href="{{ url_for('auth.register') }}" class="mt-6 text-emerald-600 hover:text-emerald-700 font-semibold text-sm inline-flex items-center gap-1">
-                Learn More <i data-lucide="arrow-right" class="w-4 h-4"></i>
-            </a>
-        </div>
 
-        <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition flex flex-col justify-between">
-            <div>
+            <!-- Card 5 -->
+            <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition duration-300">
                 <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-6">
                     <i data-lucide="clipboard-check"></i>
                 </div>
                 <h3 class="text-xl font-bold text-gray-900">Field Officer Portal</h3>
-                <p class="mt-3 text-gray-600 text-sm leading-relaxed">
-                    Bridge tech-literacy gaps! Field agents capture real farm telemetry coordinates, audit conditions, and upload photos smoothly[cite: 114, 143, 148, 150].
+                <p class="mt-3 text-gray-600 leading-relaxed">
+                    Capture field observations, geolocation data, farm photos,
+                    and operational reports directly from the field.
                 </p>
             </div>
-            <a href="{{ url_for('auth.register') }}" class="mt-6 text-emerald-600 hover:text-emerald-700 font-semibold text-sm inline-flex items-center gap-1">
-                Learn More <i data-lucide="arrow-right" class="w-4 h-4"></i>
-            </a>
-        </div>
 
-        <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition flex flex-col justify-between">
-            <div>
+            <!-- Card 6 -->
+            <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition duration-300">
                 <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-6">
                     <i data-lucide="trending-up"></i>
                 </div>
                 <h3 class="text-xl font-bold text-gray-900">Market Intelligence</h3>
-                <p class="mt-3 text-gray-600 text-sm leading-relaxed">
-                    Keep real-time tabs on regional maize/bean pricing and unlock predictive trend data for optimized sales seasons[cite: 91, 92, 94].
+                <p class="mt-3 text-gray-600 leading-relaxed">
+                    Stay updated with crop prices, demand forecasts, and market
+                    trends to maximize profitability.
                 </p>
             </div>
-            <a href="{{ url_for('auth.register') }}" class="mt-6 text-emerald-600 hover:text-emerald-700 font-semibold text-sm inline-flex items-center gap-1">
-                Learn More <i data-lucide="arrow-right" class="w-4 h-4"></i>
-            </a>
+
         </div>
     </div>
 </section>
+
 {% endblock %}

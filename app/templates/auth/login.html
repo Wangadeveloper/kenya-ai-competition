@@ -7,16 +7,6 @@
         <p class="text-xs text-gray-500 mt-1">Access metrics, AI recommendations, and loan panels.</p>
     </div>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="p-4 mb-4 text-xs rounded-xl bg-rose-50 text-rose-600 border border-rose-100">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-
     <form method="POST" action="" class="space-y-4">
         {{ form.hidden_tag() }}
         

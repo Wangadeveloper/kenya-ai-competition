@@ -1,15 +1,12 @@
 from datetime import datetime
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from app.extensions import db
-
-
-from app.extensions import login_manager  # or wherever your LoginManager instance lives
+from app.extensions import db, login_manager
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
-    
+
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     
@@ -18,24 +15,37 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(256), nullable=False)
     
-    # Core Persona Routing System
-    # Values: 'farmer' or 'officer'
+    # Core Persona Routing System ('farmer' or 'officer')
     role = db.Column(db.String(20), nullable=False, default='farmer')
     
     # Shared Personal Telemetry
     full_name = db.Column(db.String(100), nullable=False)
-    phone_number = db.Column(db.String(20), nullable=False)
+    phone_number = db.Column(db.String(20), nullable=False, unique=True)
     county = db.Column(db.String(50), nullable=False, default='Kakamega')
     sub_county = db.Column(db.String(50), nullable=True)
     age = db.Column(db.Integer, nullable=True)
     gender = db.Column(db.String(10), nullable=True)
+    
+    # Shared Personal Telemetry Expansion
+    national_id = db.Column(db.String(20), unique=True, nullable=True)
+    ward = db.Column(db.String(50), nullable=True)
     
     # Farmer-Specific Attributes
     farm_size = db.Column(db.Float, nullable=True, default=0.0)
     primary_crop = db.Column(db.String(50), nullable=True, default='Maize')
     livestock_type = db.Column(db.String(50), nullable=True, default='None')
     water_source = db.Column(db.String(50), nullable=True, default='Rain-fed')
-    credit_score = db.Column(db.Integer, nullable=False, default=700) # Out of 850
+    credit_score = db.Column(db.Integer, nullable=False, default=700) 
+    sacco_id = db.Column(db.Integer, db.ForeignKey('saccos.id'), nullable=True)
+    
+    # Farmer-Specific Attributes Expansion
+    soil_type = db.Column(db.String(50), nullable=True, default='Clay loam')
+    irrigation_type = db.Column(db.String(50), nullable=True, default='Rain-fed')
+    livestock_count = db.Column(db.Integer, nullable=True, default=0)
+    years_farming = db.Column(db.Integer, nullable=True, default=0)
+    smartphone_owned = db.Column(db.Boolean, nullable=True, default=True)
+    literacy_level = db.Column(db.String(50), nullable=True, default='Basic')
+    preferred_language = db.Column(db.String(20), nullable=True, default='English')
     
     # Field Officer Specific Attributes
     employee_id = db.Column(db.String(50), unique=True, nullable=True)
@@ -47,6 +57,11 @@ class User(UserMixin, db.Model):
     plans = db.relationship('FarmPlan', backref='farmer', lazy='dynamic')
     loans = db.relationship('LoanApplication', backref='applicant', lazy='dynamic')
     posts = db.relationship('Post', backref='author', lazy='dynamic')
+    ledger_entries = db.relationship('FarmLedger', backref='farmer', lazy='dynamic')
+    
+    # Relationship tracking for Field Visits (Dual-perspective)
+    visits_received = db.relationship('FieldVisit', foreign_keys='FieldVisit.farmer_id', backref='farmer', lazy='dynamic')
+    visits_conducted = db.relationship('FieldVisit', foreign_keys='FieldVisit.officer_id', backref='officer', lazy='dynamic')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -55,7 +70,13 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
 
-# ... Keep your existing User model code completely as it is here ...
+class Sacco(db.Model):
+    __tablename__ = 'saccos'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    county = db.Column(db.String(50), nullable=False)
+    members = db.relationship('User', backref='sacco', lazy='dynamic')
+
 
 class FarmPlan(db.Model):
     __tablename__ = 'farm_plans'
@@ -65,11 +86,9 @@ class FarmPlan(db.Model):
     season_name = db.Column(db.String(100), nullable=False)
     crop_to_plant = db.Column(db.String(50), nullable=False)
     estimated_budget = db.Column(db.Float, default=0.0)
-    ai_recommendations = db.Column(db.Text, nullable=True) # Stores Markdown generated advice
+    expected_yield_kg = db.Column(db.Float, nullable=True, default=0.0)
+    ai_recommendations = db.Column(db.Text, nullable=True) 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    def __repr__(self):
-        return f"<FarmPlan {self.season_name} - {self.crop_to_plant}>"
 
 
 class LoanApplication(db.Model):
@@ -79,12 +98,35 @@ class LoanApplication(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     purpose = db.Column(db.String(200), nullable=False)
-    # Status values: 'Pending', 'Approved', 'Rejected'
     status = db.Column(db.String(20), nullable=False, default='Pending') 
+    repayment_term_months = db.Column(db.Integer, default=6)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    def __repr__(self):
-        return f"<LoanApplication KES {self.amount} - {self.status}>"
+
+class FieldVisit(db.Model):
+    __tablename__ = 'field_visits'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    farmer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    officer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    
+    gps_coordinates = db.Column(db.String(100), nullable=True)
+    crop_health_status = db.Column(db.String(50), nullable=False) # e.g., 'Healthy', 'Pest Outbreak', 'Nutrient Deficient'
+    notes_summary = db.Column(db.Text, nullable=False)
+    recommended_action = db.Column(db.String(200), nullable=True)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class MarketInsight(db.Model):
+    __tablename__ = 'market_insights'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    crop_name = db.Column(db.String(50), nullable=False, index=True)
+    market_location = db.Column(db.String(100), nullable=False) # e.g., 'Chwele Market'
+    current_price_per_kg = db.Column(db.Float, nullable=False)
+    price_trend = db.Column(db.String(20), default='Stable') # 'Rising', 'Falling', 'Stable'
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class Post(db.Model):
@@ -96,5 +138,100 @@ class Post(db.Model):
     body = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    def __repr__(self):
-        return f"<Post {self.title}>"
+    @property
+    def content(self):
+        text = self.body
+        if "--- YouTube URL ---" in text:
+            text = text.split("--- YouTube URL ---")[0]
+        elif "--- AI Video Takeaways ---" in text:
+            text = text.split("--- AI Video Takeaways ---")[0]
+        return text.strip()
+
+    @property
+    def crop_tag(self):
+        if self.title and "Advisory regarding #" in self.title:
+            tag = self.title.split("Advisory regarding #")[1].strip()
+            return tag if tag else None
+        return None
+
+    @property
+    def county_tag(self):
+        return self.author.county if self.author else "Kakamega"
+
+    @property
+    def youtube_url(self):
+        if "--- YouTube URL ---" in self.body:
+            parts = self.body.split("--- YouTube URL ---")
+            subparts = parts[1].split("--- AI Video Takeaways ---")
+            return subparts[0].strip()
+        return None
+
+    @property
+    def video_summary(self):
+        if "--- AI Video Takeaways ---" in self.body:
+            return self.body.split("--- AI Video Takeaways ---")[1].strip()
+        return None
+
+
+class FarmLedger(db.Model):
+    __tablename__ = 'farm_ledgers'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    activity_date = db.Column(db.Date, default=lambda: datetime.utcnow().date())
+    record_type = db.Column(db.String(20), nullable=False) # 'income' or 'expense'
+    category = db.Column(db.String(50), nullable=False) # e.g. Seeds, Fertilizer, Labor, Harvest Sale
+    amount = db.Column(db.Float, nullable=False)
+    description = db.Column(db.String(200), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Comment(db.Model):
+    __tablename__ = 'comments'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    commenter = db.relationship('User', backref=db.backref('comments', lazy='dynamic'))
+    post = db.relationship('Post', backref=db.backref('comments_list', lazy='dynamic'))
+
+
+class Repayment(db.Model):
+    __tablename__ = 'repayments'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    loan_id = db.Column(db.Integer, db.ForeignKey('loan_applications.id'), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    repayment_date = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20), nullable=False, default='Completed') # 'Completed', 'Failed', 'Pending'
+
+    loan = db.relationship('LoanApplication', backref=db.backref('repayments', lazy='dynamic'))
+
+
+class CropYield(db.Model):
+    __tablename__ = 'crop_yields'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    crop_name = db.Column(db.String(50), nullable=False)
+    season_name = db.Column(db.String(100), nullable=False)
+    acreage = db.Column(db.Float, default=1.0)
+    yield_kg = db.Column(db.Float, default=0.0)
+    revenue = db.Column(db.Float, default=0.0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    farmer = db.relationship('User', backref=db.backref('yields', lazy='dynamic'))
+
+
+class ExtensionGuide(db.Model):
+    __tablename__ = 'extension_guides'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    embedding = db.Column(db.JSON, nullable=True) # Will store list of floats (embedding vector)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

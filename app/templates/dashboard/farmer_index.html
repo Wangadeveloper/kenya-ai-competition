@@ -3,8 +3,20 @@
 {% block content %}
 <div class="space-y-6 py-2">
     <div class="bg-gradient-to-r from-emerald-800 to-teal-900 text-white p-6 rounded-3xl shadow-lg relative overflow-hidden">
-        <h2 class="text-2xl font-bold">Mkulima: {{ farmer.full_name }}</h2>
-        <p class="text-emerald-100 text-xs mt-1">Location Sector: {{ farmer.county }} County, {{ farmer.sub_county }} | Primary Yield Focus: {{ farmer.primary_crop }}</p>
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 relative z-10">
+            <div>
+                <h2 class="text-2xl font-bold">Mkulima: {{ farmer.full_name }}</h2>
+                <p class="text-emerald-100 text-xs mt-1">
+                    Location Sector: {{ farmer.county }} County, {{ farmer.sub_county }} | Primary Yield Focus: {{ farmer.primary_crop }}
+                </p>
+            </div>
+            {% if farmer.sacco %}
+            <div class="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-xl text-xs shrink-0">
+                <span class="block text-[10px] text-emerald-200 uppercase font-bold tracking-wider">Affiliated Network</span>
+                <strong class="text-white block mt-0.5">🏢 {{ farmer.sacco.name }}</strong>
+            </div>
+            {% endif %}
+        </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -12,7 +24,9 @@
         <div class="lg:col-span-2 space-y-6">
             <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                 <div class="flex justify-between items-center mb-4 border-b border-gray-50 pb-2">
-                    <h3 class="font-bold text-gray-800 flex items-center gap-2"><i data-lucide="trending-up" class="text-emerald-600 w-4 h-4"></i> Localized Market Price Indicators</h3>
+                    <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                        <i data-lucide="trending-up" class="text-emerald-600 w-4 h-4"></i> Localized Market Price Indicators
+                    </h3>
                     <span class="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded">KES Pricing</span>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -29,16 +43,128 @@
             </div>
 
             <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-                <h3 class="font-bold text-gray-800 flex items-center gap-2"><i data-lucide="cpu" class="text-emerald-600 w-4 h-4"></i> Automated Crop AI Co-Pilot Tools</h3>
+                <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                    <i data-lucide="cpu" class="text-emerald-600 w-4 h-4"></i> Automated Crop AI Co-Pilot Tools
+                </h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <a href="{{ url_for('dashboard.plan_season') }}" class="p-4 rounded-xl border border-gray-100 hover:border-emerald-200 hover:bg-emerald-50/30 transition block">
                         <h4 class="font-bold text-sm text-gray-900">Generate Seasonal Strategy</h4>
-                        <p class="text-xs text-gray-500 mt-1">Get precise planting calendars, fertilizers recommendations, and budget reports from Gemini AI.</p>
+                        <p class="text-xs text-gray-500 mt-1">Get precise planting calendars, fertilizer recommendations, and budget reports from Gemini AI.</p>
                     </a>
                     <a href="{{ url_for('loans.apply_loan') }}" class="p-4 rounded-xl border border-gray-100 hover:border-emerald-200 hover:bg-emerald-50/30 transition block">
                         <h4 class="font-bold text-sm text-gray-900">Financing & Credit Trackers</h4>
                         <p class="text-xs text-gray-500 mt-1">Review verified agricultural ledger applications and check repayment milestones.</p>
                     </a>
+                </div>
+            </div>
+
+            <!-- FARM LEDGER SECTION -->
+            <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-6">
+                <div class="flex justify-between items-center border-b border-gray-50 pb-2">
+                    <h3 class="font-bold text-gray-800 flex items-center gap-2 text-sm sm:text-base">
+                        <i data-lucide="book-open" class="text-emerald-600 w-4 h-4"></i> Shajara ya Shamba (Farm Ledger)
+                    </h3>
+                    <span class="text-[10px] bg-teal-50 text-teal-700 font-bold px-2 py-0.5 rounded">Financial Health</span>
+                </div>
+
+                <!-- Financial Stats Summary -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100/60">
+                        <span class="text-xs text-emerald-800 font-semibold block">Total Revenue</span>
+                        <strong class="text-base sm:text-lg text-emerald-950 block mt-1">KES {{ "{:,.2f}".format(total_income) }}</strong>
+                    </div>
+                    <div class="bg-rose-50/50 p-4 rounded-xl border border-rose-100/60">
+                        <span class="text-xs text-rose-800 font-semibold block">Total Expenses</span>
+                        <strong class="text-base sm:text-lg text-rose-950 block mt-1">KES {{ "{:,.2f}".format(total_expense) }}</strong>
+                    </div>
+                    <div class="bg-teal-50/50 p-4 rounded-xl border border-teal-100/60">
+                        <span class="text-xs text-teal-800 font-semibold block">Net Cashflow</span>
+                        <strong class="text-base sm:text-lg text-teal-950 block mt-1">KES {{ "{:,.2f}".format(net_cashflow) }}</strong>
+                    </div>
+                </div>
+
+                <!-- Ledger Forms & Records Grid -->
+                <div class="grid grid-cols-1 xl:grid-cols-5 gap-6 pt-2">
+                    <!-- Form to add record -->
+                    <div class="xl:col-span-2 space-y-3 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+                        <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider">Log New Transaction</h4>
+                        <form action="{{ url_for('dashboard.add_ledger_entry') }}" method="POST" class="space-y-3">
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">Transaction Type</label>
+                                <select name="record_type" class="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none cursor-pointer">
+                                    <option value="income">Revenue (Income)</option>
+                                    <option value="expense">Expense (Outflow)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">Category</label>
+                                <select name="category" class="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none cursor-pointer">
+                                    <option value="Harvest Sale">Harvest Sale</option>
+                                    <option value="Seeds Purchase">Seeds Purchase</option>
+                                    <option value="Fertilizer">Fertilizer / Inputs</option>
+                                    <option value="Labor Costs">Labor Costs</option>
+                                    <option value="Irrigation">Irrigation / Water</option>
+                                    <option value="Tools & Equip">Tools & Equipment</option>
+                                    <option value="Other">Other Category</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">Amount (KES)</label>
+                                <input type="number" step="0.01" name="amount" required placeholder="Amount in KES" class="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">Description</label>
+                                <input type="text" name="description" placeholder="e.g. Sold 10 bags of Maize" class="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                            </div>
+                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-2.5 rounded-lg transition cursor-pointer">
+                                Save Transaction
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Ledger Table -->
+                    <div class="xl:col-span-3 space-y-3">
+                        <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider">Transaction History</h4>
+                        <div class="overflow-y-auto max-h-72 border border-gray-100 rounded-xl bg-white">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-gray-50 text-[10px] uppercase font-bold text-gray-500 border-b border-gray-100">
+                                        <th class="p-2">Date</th>
+                                        <th class="p-2">Type</th>
+                                        <th class="p-2">Category</th>
+                                        <th class="p-2 text-right">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-xs divide-y divide-gray-50">
+                                    {% for entry in ledger %}
+                                    <tr class="hover:bg-gray-50/50">
+                                        <td class="p-2 text-gray-500 whitespace-nowrap">{{ entry.activity_date.strftime('%Y-%m-%d') }}</td>
+                                        <td class="p-2">
+                                            {% if entry.record_type == 'income' %}
+                                            <span class="bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded text-[10px] uppercase">Income</span>
+                                            {% else %}
+                                            <span class="bg-rose-100 text-rose-800 font-bold px-1.5 py-0.5 rounded text-[10px] uppercase">Expense</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="p-2 font-medium text-gray-700">
+                                            {{ entry.category }}
+                                            {% if entry.description %}
+                                            <span class="block text-[10px] font-normal text-gray-400 mt-0.5">{{ entry.description }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="p-2 text-right font-bold {{ 'text-emerald-600' if entry.record_type == 'income' else 'text-rose-600' }}">
+                                            KES {{ "{:,.2f}".format(entry.amount) }}
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="4" class="p-8 text-center text-gray-400 italic">No transactions recorded yet. Use the form to add one!</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -70,6 +196,160 @@
                 <p class="text-xs text-gray-400 italic">No active loan applications currently floating.</p>
                 {% endif %}
             </div>
+
+            <!-- WEATHER & OUTBREAK STATUS -->
+            <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4 text-left">
+                <div class="flex items-center justify-between border-b border-gray-50 pb-2">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-gray-800 flex items-center gap-1.5">
+                        🌤️ Local Weather & Alerts
+                    </h4>
+                    <span class="text-[10px] bg-sky-50 text-sky-700 font-bold px-2 py-0.5 rounded">{{ farmer.county }}</span>
+                </div>
+                {% if weather %}
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-2xl font-bold text-gray-800">{{ weather.temp }}°C</span>
+                        <span class="text-xs text-gray-500 block mt-0.5">{{ weather.condition }}</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs font-semibold text-gray-700 block">Rain: {{ weather.precipitation }}%</span>
+                        <span class="text-xs text-gray-500 block mt-0.5">Wind: {{ weather.wind }} km/h</span>
+                    </div>
+                </div>
+                {% if weather.alert %}
+                <div class="bg-amber-50 border border-amber-100 rounded-xl p-2 text-[10px] text-amber-800 mt-2">
+                    ⚠️ <strong>Alert:</strong> {{ weather.alert }}
+                </div>
+                {% endif %}
+                {% else %}
+                <p class="text-xs text-gray-400 italic">Weather telemetry unavailable.</p>
+                {% endif %}
+            </div>
+
+            <!-- REPORT OUTBREAK -->
+            <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4 text-left">
+                <div class="flex items-center justify-between border-b border-gray-50 pb-2">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-gray-800 flex items-center gap-1.5">
+                        🐛 Report Pest/Disease Outbreak
+                    </h4>
+                </div>
+                <form action="{{ url_for('dashboard.report_outbreak') }}" method="POST" enctype="multipart/form-data" class="space-y-3">
+                    <div>
+                        <label class="text-[9px] font-bold text-gray-500 uppercase block mb-1">Crop Affected</label>
+                        <input type="text" name="crop_name" value="{{ farmer.primary_crop or 'Maize' }}" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none" required>
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-bold text-gray-500 uppercase block mb-1">Photo of Crop Damage</label>
+                        <input type="file" name="outbreak_image" accept="image/*" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none" required>
+                    </div>
+                    <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs py-2 rounded-lg transition cursor-pointer">
+                        Analyze & Report Outbreak
+                    </button>
+                </form>
+            </div>
+
+
+            <!-- INTERACTIVE AI-ADVISOR BOT -->
+            <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4 flex flex-col h-[400px]">
+                <div class="flex items-center justify-between border-b border-gray-50 pb-2 shrink-0">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-gray-800 flex items-center gap-1.5">
+                        🤖 AgriNexus AI Co-Pilot
+                    </h4>
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                </div>
+                
+                <!-- Chat Message logs -->
+                <div id="ai-chat-box" class="flex-1 overflow-y-auto space-y-3 pr-1 text-xs">
+                    <div class="flex items-start gap-2">
+                        <div class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">🤖</div>
+                        <div class="bg-gray-100 text-gray-800 p-2.5 rounded-2xl rounded-tl-none max-w-[85%] leading-relaxed">
+                            Jambo {{ farmer.full_name }}! Mimi ni AI advisor wako. Una swali lolote kuhusu upanzi, mbolea, au shajara yako ya shamba leo?
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Input area -->
+                <div class="pt-2 border-t border-gray-100 shrink-0">
+                    <form id="ai-chat-form" class="flex gap-2">
+                        <input 
+                            type="text" 
+                            id="ai-chat-input" 
+                            placeholder="Uliza AgriNexus..." 
+                            required
+                            class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                        >
+                        <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-xl transition text-xs cursor-pointer">
+                            Send
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- JavaScript for the Chat widget -->
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const chatForm = document.getElementById('ai-chat-form');
+                    const chatInput = document.getElementById('ai-chat-input');
+                    const chatBox = document.getElementById('ai-chat-box');
+
+                    chatForm.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        const message = chatInput.value.trim();
+                        if (!message) return;
+
+                        // Append user message
+                        appendMessage('user', message);
+                        chatInput.value = '';
+
+                        // Append typing indicator
+                        const typingId = appendMessage('system', 'AgriNexus anajibu...');
+
+                        // Send query to backend
+                        fetch("{{ url_for('dashboard.ai_advisor_chat') }}", {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ message: message })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            const indicator = document.getElementById(typingId);
+                            if (indicator) indicator.remove();
+                            if (data.response) {
+                                appendMessage('bot', data.response);
+                            } else {
+                                appendMessage('bot', 'Pole sana, kumetokea hitilafu ya mtandao. Tafadhali jaribu tena.');
+                            }
+                        })
+                        .catch(err => {
+                            const indicator = document.getElementById(typingId);
+                            if (indicator) indicator.remove();
+                            appendMessage('bot', 'Pole sana, kumetokea hitilafu ya mtandao. Tafadhali jaribu tena.');
+                        });
+                    });
+
+                    function appendMessage(sender, text) {
+                        const msgDiv = document.createElement('div');
+                        msgDiv.className = 'flex items-start gap-2 ' + (sender === 'user' ? 'justify-end' : '');
+                        
+                        const uniqueId = 'msg-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+                        msgDiv.id = uniqueId;
+
+                        const avatar = sender === 'user' ? '👨‍🌾' : '🤖';
+                        const bgColor = sender === 'user' ? 'bg-emerald-600 text-white rounded-tr-none' : 'bg-gray-100 text-gray-800 rounded-tl-none';
+                        const order = sender === 'user' ? 'order-last' : '';
+
+                        msgDiv.innerHTML = `
+                            <div class="w-6 h-6 rounded-lg ${sender === 'user' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-800'} flex items-center justify-center shrink-0 ${order}">${avatar}</div>
+                            <div class="${bgColor} p-2.5 rounded-2xl max-w-[85%] leading-relaxed whitespace-pre-line">${text}</div>
+                        `;
+                        chatBox.appendChild(msgDiv);
+                        chatBox.scrollTop = chatBox.scrollHeight;
+                        return uniqueId;
+                    }
+                });
+            </script>
         </div>
 
     </div>

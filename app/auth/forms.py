@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SelectField, IntegerField, FloatField, BooleanField, SubmitField
 from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, Optional
-from app.models.sql_models import User
+from app.models.sql_models import User, Sacco
 
 class LoginForm(FlaskForm):
     username = StringField('Username or Email', validators=[DataRequired()])
@@ -23,12 +23,21 @@ class RegistrationForm(FlaskForm):
     age = IntegerField('Age', validators=[Optional()])
     gender = SelectField('Gender', choices=[('Male', 'Male'), ('Female', 'Female')], validators=[Optional()])
     
-    # CRITICAL: These MUST have Optional() so they don't block submission when roles change!
-    farm_size = FloatField('Farm Size', validators=[Optional()])
+    # Farmer-Specific Fields
+    farm_size = FloatField('Farm Size (Acres)', validators=[Optional()])
     primary_crop = StringField('Primary Crop', validators=[Optional()])
     livestock_type = StringField('Livestock', validators=[Optional()])
-    water_source = StringField('Water Source', validators=[Optional()])
-    employee_id = StringField('Employee ID', validators=[Optional()])
+    
+    # FIX: Changed from StringField to SelectField to handle the choices array safely
+    water_source = SelectField(
+        'Water Source', 
+        choices=[('', 'Select Water Source...'), ('Rain-fed', 'Rain-fed'), ('Borehole', 'Borehole'), ('River-pumped', 'River-pumped')], 
+        validators=[Optional()]
+    )
+    sacco_name = StringField('Cooperative / SACCO Name', validators=[Optional()])
+    
+    # Field Officer Specific Fields
+    employee_id = StringField('Official Employee ID Badge', validators=[Optional()])
     
     submit = SubmitField('Register')
 
@@ -41,6 +50,11 @@ class RegistrationForm(FlaskForm):
         user = User.query.filter_by(email=email.data).first()
         if user:
             raise ValidationError('An account with this email address already exists.')
+            
+    def validate_phone_number(self, phone_number):
+        user = User.query.filter_by(phone_number=phone_number.data.strip()).first()
+        if user:
+            raise ValidationError('This phone number is already registered to another user account.')
             
     def validate_employee_id(self, employee_id):
         if self.role.data == 'officer' and not employee_id.data:

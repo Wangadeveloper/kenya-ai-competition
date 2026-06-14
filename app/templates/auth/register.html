@@ -66,8 +66,10 @@
             </div>
         </div>
 
+        <!-- FARMER FIELDS CONTAINER -->
         <div id="farmer-fields-container" class="bg-emerald-50/50 p-5 rounded-2xl border border-emerald-100/50 space-y-4">
             <h4 class="text-xs font-extrabold text-emerald-800 uppercase tracking-wide">Farmer Operations Profiling</h4>
+            
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1">Farm Size (Acres)</label>
@@ -78,6 +80,7 @@
                     {{ form.primary_crop(class="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm") }}
                 </div>
             </div>
+            
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1">Livestock Types</label>
@@ -88,8 +91,16 @@
                     {{ form.water_source(class="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm") }}
                 </div>
             </div>
+
+            <!-- SACCO Integration Boundary Layer -->
+            <div class="border-t border-emerald-100/70 pt-3">
+                <label class="block text-xs font-bold text-emerald-900 uppercase tracking-wider mb-1">Cooperative SACCO Affiliation</label>
+                {{ form.sacco_name(class="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500", placeholder="e.g. Kenya Digital Farmers SACCO (Leave blank if none)") }}
+                <p class="text-[10px] text-emerald-700 mt-1 italic">Links your financial profile metrics directly to local agricultural pool headers.</p>
+            </div>
         </div>
 
+        <!-- OFFICER FIELDS CONTAINER -->
         <div id="officer-fields-container" class="bg-blue-50/50 p-5 rounded-2xl border border-blue-100/50 hidden">
             <h4 class="text-xs font-extrabold text-blue-800 uppercase tracking-wide">Field Agent Operations Credential</h4>
             <div>
@@ -122,7 +133,7 @@
         }
 
         roleSelector.addEventListener("change", handleRoleFieldsToggle);
-        handleRoleFieldsToggle(); // Run instantly to configure defaults safely
+        handleRoleFieldsToggle(); 
     });
 </script>
 {% endblock %}

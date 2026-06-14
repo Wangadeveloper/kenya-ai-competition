@@ -1,11 +1,13 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, current_user, login_required
-# REMOVED: from werkzeug.urls import url_parse
-from urllib.parse import urlparse  # ADDED: Modern Python native alternative
+from urllib.parse import urlparse
 
 from app.extensions import db
-from app.models.sql_models import User
+from app.models.sql_models import User, Sacco
 from app.auth.forms import LoginForm, RegistrationForm
+
+# Neo4j Service Instance Integration
+from app.services.neo4j_service import Neo4jService
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -40,9 +42,7 @@ def login():
         next_page = request.args.get('next')
         
         # Security validation check: Ensure the next page route path is relative 
-        # (UPDATED to use Python's native urlparse)
         if not next_page or urlparse(next_page).netloc != '':
-            # Hands off directly to the centralized role switchboard at dashboard_bp
             next_page = url_for('dashboard.index')
             
         return redirect(next_page)
@@ -55,43 +55,94 @@ def register():
     """
     Unified Account Creation Handler.
     Dynamically configures unique profile schemas for traditional farmers or 
-    field officers depending on the chosen context identification identity role form field.
+    field officers, mapping SACCO cooperatives, and mirroring context telemetry 
+    instantly to the Neo4j Graph database for down-stream GraphRAG processing.
     """
     if current_user.is_authenticated:
         return redirect(url_for('dashboard.index'))
         
     form = RegistrationForm()
     if form.validate_on_submit():
-        # Step 1: Build the baseline shared telemetry user record instance
+        sacco_obj = None
+        
+        # Step 1: Dynamic SACCO/Cooperative Structural Intercept
+        if form.role.data == 'farmer' and form.sacco_name.data:
+            sacco_name_cleaned = form.sacco_name.data.strip()
+            # Check if this Cooperative entity already exists within our relational tables
+            sacco_obj = Sacco.query.filter_by(name=sacco_name_cleaned).first()
+            if not sacco_obj:
+                # Dynamically instantiate a new cooperative block matching the farmer's location context
+                sacco_obj = Sacco(name=sacco_name_cleaned, county=form.county.data)
+                db.session.add(sacco_obj)
+                db.session.commit()
+
+        # Step 2: Build the baseline shared telemetry user record instance
         new_user = User(
             username=form.username.data,
             email=form.email.data,
             role=form.role.data,
             full_name=form.full_name.data,
-            phone_number=form.phone_number.data,
+            phone_number=form.phone_number.data.strip(),
             county=form.county.data,
             sub_county=form.sub_county.data,
             age=form.age.data,
-            gender=form.gender.data
+            gender=form.gender.data,
+            sacco_id=sacco_obj.id if sacco_obj else None
         )
         new_user.set_password(form.password.data)
         
-        # Step 2: Inject role-specific tracking criteria context configurations
+        # Step 3: Inject role-specific tracking criteria context configurations
         if form.role.data == 'farmer':
             new_user.farm_size = form.farm_size.data or 0.0
-            new_user.primary_crop = form.primary_crop.data
+            new_user.primary_crop = form.primary_crop.data or 'Maize'
             new_user.livestock_type = form.livestock_type.data or 'None'
-            new_user.water_source = form.water_source.data
+            new_user.water_source = form.water_source.data or 'Rain-fed'
             new_user.credit_score = 710  # Initial platform baseline entry default rating
             
         elif form.role.data == 'officer':
             new_user.employee_id = form.employee_id.data
-            # Set the operational coverage boundaries based on assigned home base entries
             new_user.assigned_region = f"{form.county.data} - {form.sub_county.data or 'All Zones'}"
             
-        # Step 3: Commit and execute database tracking state update
+        # Step 4: Commit and execute relational database transactional state write
         db.session.add(new_user)
         db.session.commit()
+        
+        # Step 5: Dual-Persistence State Serialization Hook into Neo4j Cluster Layer
+        try:
+            ns = Neo4jService()
+            user_payload = {
+                'id': new_user.id,
+                'phone_number': new_user.phone_number,
+                'full_name': new_user.full_name,
+                'role': new_user.role,
+                'age': new_user.age,
+                'gender': new_user.gender,
+                'credit_score': getattr(new_user, 'credit_score', 700),
+                'farm_size': getattr(new_user, 'farm_size', 0.0),
+                'water_source': getattr(new_user, 'water_source', 'Rain-fed'),
+                'county': new_user.county,
+                'sub_county': new_user.sub_county,
+                'primary_crop': getattr(new_user, 'primary_crop', None),
+                'sacco_name': sacco_obj.name if sacco_obj else None,
+                'national_id': getattr(new_user, 'national_id', None),
+                'ward': getattr(new_user, 'ward', None),
+                'soil_type': getattr(new_user, 'soil_type', None),
+                'irrigation_type': getattr(new_user, 'irrigation_type', None),
+                'livestock_count': getattr(new_user, 'livestock_count', 0),
+                'years_farming': getattr(new_user, 'years_farming', 0),
+                'smartphone_owned': getattr(new_user, 'smartphone_owned', True),
+                'literacy_level': getattr(new_user, 'literacy_level', None),
+                'preferred_language': getattr(new_user, 'preferred_language', None)
+            }
+
+            # Execute transactional Cypher MERGE logic safely
+            ns.sync_user_node(user_payload)
+            ns.close()
+        except Exception as graph_err:
+            # FAIL-SOFT SAFETY BOUNDARY: Catch cluster exceptions or network timeouts 
+            # to prevent authentication thread locking if the graph cluster is offline.
+            # Real-time telemetry sync will be reconciled via asynchronous tasks.
+            pass
         
         flash('Registration completed successfully! Please log in to continue.', 'success')
         return redirect(url_for('auth.login'))

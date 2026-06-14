@@ -33,8 +33,8 @@ class NotificationService:
         """
         Transmits real-time transactional reports directly into Meta Cloud WhatsApp Framework endpoints.
         """
-        token = current_app.config['WHATSAPP_TOKEN']
-        phone_id = current_app.config['WHATSAPP_PHONE_NUMBER_ID']
+        token = current_app.config.get('WHATSAPP_TOKEN')
+        phone_id = current_app.config.get('WHATSAPP_PHONE_NUMBER_ID')
         
         if not token:
             print(f"[Simulated WhatsApp to {phone_number}]: {message}")
