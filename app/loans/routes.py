@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app.extensions import db
-from app.models.sql_models import LoanApplication
+from app.models.sql_models import LoanApplication, FarmLedger
 from app.services.ai_service import AIService
 from app.services.neo4j_service import Neo4jService
 from app.services.notification_service import NotificationService
@@ -17,6 +17,7 @@ def apply_loan():
             crop = request.form.get('crop', current_user.primary_crop or 'Maize')
             purpose = request.form.get('purpose', 'Farm Inputs Acquisition')
             term_months = int(request.form.get('period', 6))
+            target_market = request.form.get('target_market', 'Local')  # EU, Local, Regional
             
             if amount <= 0:
                 flash('Please enter a valid financing request amount.', 'danger')
@@ -26,7 +27,13 @@ def apply_loan():
             flash('Invalid numerical data submitted for evaluation fields.', 'danger')
             return redirect(url_for('loans.apply_loan'))
         
-        loan_payload = {'requested_amount': amount, 'crop': crop, 'purpose': purpose, 'repayment_period': term_months}
+        loan_payload = {
+            'requested_amount': amount,
+            'crop': crop,
+            'purpose': purpose,
+            'repayment_period': term_months,
+            'target_market': target_market
+        }
         
         # Pull active outbreaks in county
         regional_alerts = 0
@@ -37,15 +44,23 @@ def apply_loan():
         except Exception:
             pass
 
-        # Trigger dynamic credit risk assessment logic via Gemini
+        # Count flagged chemical input entries in ledger for EU compliance risk injection
+        flagged_input_count = FarmLedger.query.filter_by(
+            user_id=current_user.id,
+            compliance_status='Flagged'
+        ).count()
+
+        # Trigger dynamic credit risk assessment logic via Gemini (compliance-aware)
         ai = AIService()
-        risk_score, assigned_status, justification = ai.evaluate_loan_risk(loan_payload, current_user, regional_alerts)
+        risk_score, assigned_status, justification = ai.evaluate_loan_risk(
+            loan_payload, current_user, regional_alerts, flagged_input_count
+        )
         
         # Persist into SQL Layer
         new_loan = LoanApplication(
             user_id=current_user.id,
             amount=amount,
-            purpose=f"[{crop}] {purpose} | AI note: {justification} (Risk: {risk_score}/100)",
+            purpose=f"[{crop}→{target_market}] {purpose} | AI note: {justification} (Risk: {risk_score}/100)",
             status=assigned_status,
             repayment_term_months=term_months
         )
@@ -61,7 +76,8 @@ def apply_loan():
             pass
             
         # Dispatch SMS
-        sms_payload = f"Habari {current_user.full_name}, loan request KES {amount:,.2f} is {assigned_status}. Risk index: {risk_score}/100."
+        compliance_note = f" | EU Compliance Risk: {flagged_input_count} flagged input(s)." if target_market == 'EU' and flagged_input_count > 0 else ""
+        sms_payload = f"Habari {current_user.full_name}, loan request KES {amount:,.2f} is {assigned_status}. Risk index: {risk_score}/100.{compliance_note}"
         try:
             NotificationService.send_sms_via_africastalking(current_user.phone_number, sms_payload)
         except Exception:

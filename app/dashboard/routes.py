@@ -1,3 +1,4 @@
+
 import io
 import markdown
 from datetime import datetime
@@ -12,6 +13,9 @@ from app.services.ai_service import AIService
 from app.services.neo4j_service import Neo4jService
 from app.services.notification_service import NotificationService
 from app.services.weather_service import WeatherService
+
+# Chemical input categories that trigger automatic EU compliance screening
+CHEMICAL_INPUT_CATEGORIES = {'Fertilizer', 'Pesticide', 'Herbicide', 'Fungicide', 'Chemical Input'}
 
 
 dashboard_bp = Blueprint('dashboard', __name__)
@@ -47,8 +51,8 @@ def index():
             feed_posts = Post.query.join(User).filter(
                 User.full_name.in_(peer_names) | (User.county == current_user.county)
             ).order_by(Post.created_at.desc()).limit(5).all()
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Dashboard Neo4j Feed Error: {e}")
 
     if not feed_posts:
         feed_posts = Post.query.order_by(Post.created_at.desc()).limit(5).all()
@@ -93,9 +97,9 @@ def plan_season():
             "crop_type": submitted_crop,
             "county": current_user.county,
             "sub_county": current_user.sub_county,
-            "farm_size": float(request.form.get('farm_size') or current_user.farm_size or 1.0),
+            "farm_size": float(request.form.get('farm_size') or getattr(current_user, 'farm_size', 1.0) or 1.0),
             "budget": submitted_budget,
-            "irrigation_type": request.form.get('irrigation_type') or current_user.water_source or 'Rain-fed',
+            "irrigation_type": request.form.get('irrigation_type') or getattr(current_user, 'water_source', 'Rain-fed'),
             "expected_loan": float(request.form.get('expected_loan') or 0)
         }
         
@@ -106,8 +110,8 @@ def plan_season():
             graph_context = ns.search_graph_rag_context(current_user.phone_number)
             regional_alerts = ns.get_regional_outbreak_risk(current_user.county, submitted_crop)
             ns.close()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Neo4j Context Error in planning: {e}")
             
         ai = AIService()
         recommendation_text = ai.generate_farm_advisory(ai_payload, graph_context, regional_alerts)
@@ -119,16 +123,27 @@ def plan_season():
             season_name=f"Long Rains Season {datetime.utcnow().year}",
             crop_to_plant=submitted_crop,
             estimated_budget=submitted_budget,
-            ai_recommendations=recommendation_text
+            ai_recommendations=recommendation_text,
+            is_export_oriented=request.form.get('is_export_oriented') == 'on',
+            target_market=request.form.get('target_market', 'Local')
         )
         db.session.add(new_plan)
         db.session.commit()
+        
+        # If EU-oriented, register DESTINED_FOR graph edge
+        target_market = request.form.get('target_market', 'Local')
+        if target_market != 'Local':
+            try:
+                ns = Neo4jService()
+                ns.link_crop_to_market(submitted_crop, target_market)
+                ns.close()
+            except Exception as e:
+                print(f"Neo4j DESTINED_FOR Sync Error: {e}")
         
         flash('Seasonal farming strategy processed successfully.', 'success')
         return render_template('loans/advisory.html', content=safe_html_advisory, plan=new_plan)
 
     return render_template('loans/apply.html', type='plan')
-
 
 
 @dashboard_bp.route('/officer/visit', methods=['POST'])
@@ -174,11 +189,12 @@ def log_visit():
             coordinates=gps
         )
         ns.close()
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Neo4j Log Field Visit Sync Error: {e}")
         
     flash(f"Field visit metrics recorded successfully for {farmer_user.full_name}.", 'success')
     return redirect(url_for('dashboard.index'))
+
 
 @dashboard_bp.route('/plan/download/<int:plan_id>')
 @login_required
@@ -215,13 +231,53 @@ def add_ledger_entry():
         if amount <= 0:
             flash('Amount must be greater than zero.', 'danger')
             return redirect(url_for('dashboard.index'))
+
+        # ----- EU Compliance Auto-Screening for Chemical Inputs -----
+        compliance_status = 'Unverified'
+        if category in CHEMICAL_INPUT_CATEGORIES:
+            try:
+                ai = AIService()
+                # Use description as the text-based compliance signal
+                query_text = description or category
+                risk_level, flagged_substances, reason = ai.check_text_compliance(
+                    query_text, target_crop=current_user.primary_crop or 'General'
+                )
+                if risk_level == 'High' or flagged_substances:
+                    compliance_status = 'Flagged'
+                    # Propagate to Neo4j Input graph
+                    try:
+                        ns = Neo4jService()
+                        ns.log_input_purchase(
+                            farmer_phone=current_user.phone_number,
+                            input_name=query_text[:100],
+                            manufacturer='Unknown',
+                            batch='SMS-Logged',
+                            compliance_status='Flagged'
+                        )
+                        ns.close()
+                    except Exception as e:
+                        print(f"Neo4j Input Compliance Sync Error: {e}")
+                    # Alert farmer via SMS
+                    try:
+                        NotificationService.send_sms_via_africastalking(
+                            current_user.phone_number,
+                            f"AgriNexus EU ALERT: Input '{query_text[:40]}' flagged! {reason[:100]}"
+                        )
+                    except Exception:
+                        pass
+                elif risk_level == 'Low':
+                    compliance_status = 'Safe'
+            except Exception as e:
+                print(f"Ledger Compliance Auto-Screen Error: {e}")
+        # -----------------------------------------------------------
             
         new_entry = FarmLedger(
             user_id=current_user.id,
             record_type=record_type,
             category=category,
             amount=amount,
-            description=description
+            description=description,
+            compliance_status=compliance_status
         )
         db.session.add(new_entry)
         db.session.commit()
@@ -250,15 +306,15 @@ def add_ledger_entry():
                     'phone_number': current_user.phone_number,
                     'full_name': current_user.full_name,
                     'role': current_user.role,
-                    'age': current_user.age,
-                    'gender': current_user.gender,
+                    'age': getattr(current_user, 'age', None),
+                    'gender': getattr(current_user, 'gender', None),
                     'credit_score': current_user.credit_score,
                     'farm_size': getattr(current_user, 'farm_size', 0.0),
                     'water_source': getattr(current_user, 'water_source', 'Rain-fed'),
                     'county': current_user.county,
                     'sub_county': current_user.sub_county,
                     'primary_crop': getattr(current_user, 'primary_crop', None),
-                    'sacco_name': current_user.sacco.name if current_user.sacco else None,
+                    'sacco_name': current_user.sacco.name if getattr(current_user, 'sacco', None) else None,
                     'national_id': getattr(current_user, 'national_id', None),
                     'ward': getattr(current_user, 'ward', None),
                     'soil_type': getattr(current_user, 'soil_type', None),
@@ -271,15 +327,16 @@ def add_ledger_entry():
                 }
                 ns.sync_user_node(user_payload)
                 ns.close()
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Neo4j Ledger Credit Sync Error: {e}")
 
-        
-        flash('Farm ledger transaction recorded successfully!', 'success')
+        status_note = f" (EU Compliance: {compliance_status})"
+        flash(f'Farm ledger transaction recorded successfully!{status_note}', 'success')
     except Exception as e:
         flash(f'Error adding transaction: {str(e)}', 'danger')
         
     return redirect(url_for('dashboard.index'))
+
 
 
 @dashboard_bp.route('/ai-advisor/chat', methods=['POST'])
@@ -312,7 +369,8 @@ def ai_advisor_chat():
         response = ai.model.generate_content(prompt)
         return {"response": response.text}
     except Exception as e:
-        return {"response": "Habari! Mfumo wa ushauri una hitilafu kidogo kwa sasa. Tafadhali jaribu tena baada ya muda mifupi."}, 500
+        print(f"AI Advisor Chat Error: {e}")
+        return {"response": "Habari! Mfumo wa ushauri una hitilafu kidogo kwa sasa. Tafadhali jaribu tena baada ya muda mfupi."}, 500
 
 
 @dashboard_bp.route('/report-outbreak', methods=['POST'])
@@ -348,8 +406,109 @@ def report_outbreak():
         
         flash(f"Ushauri wa AI: Aligundua {pest_name} (Kiwango: {severity}). Ushauri: {recommendations}", "success")
     except Exception as e:
+        print(f"Outbreak Analytics Error: {e}")
         flash(f"Hitilafu ya uchambuzi wa picha: {str(e)}", "danger")
         
+    return redirect(url_for('dashboard.index'))
+
+
+@dashboard_bp.route('/scan-input', methods=['POST'])
+@login_required
+def scan_input_compliance():
+    """
+    Multimodal EU compliance endpoint. Accepts a fertilizer/pesticide label image.
+    Runs AI screening, stamps the result to the ledger entry, and propagates to Neo4j graph.
+    """
+    if current_user.role != 'farmer':
+        flash('Access denied. Only registered farmers can scan inputs.', 'danger')
+        return redirect(url_for('dashboard.index'))
+
+    file = request.files.get('input_label_image')
+    input_name = request.form.get('input_name', '').strip()
+    manufacturer = request.form.get('manufacturer', 'Unknown').strip()
+    batch = request.form.get('batch', 'N/A').strip()
+    target_crop = request.form.get('target_crop', current_user.primary_crop or 'General')
+
+    if not file or file.filename == '':
+        flash('Please upload a label image of the input product.', 'danger')
+        return redirect(url_for('dashboard.index'))
+
+    try:
+        image_bytes = file.read()
+        mime_type = file.mimetype
+
+        ai = AIService()
+        risk_level, flagged_substances, reason, product_name = ai.screen_input_compliance(image_bytes, mime_type, target_crop)
+
+        if not input_name:
+            input_name = product_name or 'Unknown Input'
+
+        compliance_status = 'Flagged' if (risk_level in ['High', 'Medium'] or flagged_substances) else 'Safe'
+
+        # Save to SQLite FarmLedger
+        try:
+            new_entry = FarmLedger(
+                user_id=current_user.id,
+                record_type='expense',
+                category='Fertilizer',
+                amount=0.0,
+                description=f"AI Scan: {input_name}",
+                compliance_status=compliance_status
+            )
+            db.session.add(new_entry)
+            db.session.commit()
+        except Exception as e:
+            print(f"Failed to save scan to FarmLedger: {e}")
+
+        # Sync Input node into Neo4j compliance graph
+        try:
+            ns = Neo4jService()
+            ns.log_input_purchase(
+                farmer_phone=current_user.phone_number,
+                input_name=input_name,
+                manufacturer=manufacturer,
+                batch=batch,
+                compliance_status=compliance_status
+            )
+            # If flagged, find and alert exposed peers in the same cluster
+            if compliance_status == 'Flagged':
+                exposed_peers = ns.get_compliance_exposed_peers(
+                    current_user.county, current_user.primary_crop or 'Maize', current_user.phone_number
+                )
+                for peer in exposed_peers:
+                    alert_msg = (
+                        f"AgriNexus EU ALERT: Fertilizer/pesticide '{input_name}' in your cluster has been "
+                        f"flagged as EU non-compliant. Risk: {risk_level}. Check your inputs before harvest."
+                    )
+                    try:
+                        NotificationService.send_sms_via_africastalking(peer['phone_number'], alert_msg)
+                    except Exception:
+                        pass
+            ns.close()
+        except Exception as e:
+            print(f"Neo4j Input Scan Sync Error: {e}")
+
+        # Notify farmer via SMS if flagged
+        if compliance_status == 'Flagged':
+            flagged_list = ", ".join(flagged_substances) if flagged_substances else "substances detected"
+            try:
+                NotificationService.send_sms_via_africastalking(
+                    current_user.phone_number,
+                    f"AgriNexus EU SCAN: '{input_name}' FLAGGED! Substances: {flagged_list[:60]}. {reason[:80]}"
+                )
+            except Exception:
+                pass
+            flash(
+                f"⚠️ EU Compliance FLAGGED for '{input_name}': {reason} Flagged substances: {', '.join(flagged_substances) or 'See details'}.",
+                'danger'
+            )
+        else:
+            flash(f"✅ EU Compliance SAFE for '{input_name}': {reason}", 'success')
+
+    except Exception as e:
+        print(f"Input Label Scan Error: {e}")
+        flash(f'Label scan error: {str(e)}', 'danger')
+
     return redirect(url_for('dashboard.index'))
 
 
@@ -383,10 +542,11 @@ def officer_register_farmer():
         return redirect(url_for('dashboard.index'))
 
     sacco_obj = None
-    if sacacco_name := sacco_name.strip() if sacco_name else None:
-        sacco_obj = Sacco.query.filter_by(name=sacacco_name).first()
+    if sacco_name and sacco_name.strip():
+        cleaned_sacco_name = sacco_name.strip()
+        sacco_obj = Sacco.query.filter_by(name=cleaned_sacco_name).first()
         if not sacco_obj:
-            sacco_obj = Sacco(name=sacacco_name, county=county)
+            sacco_obj = Sacco(name=cleaned_sacco_name, county=county)
             db.session.add(sacco_obj)
             db.session.commit()
 
@@ -419,11 +579,11 @@ def officer_register_farmer():
             'phone_number': new_farmer.phone_number,
             'full_name': new_farmer.full_name,
             'role': new_farmer.role,
-            'age': new_farmer.age,
-            'gender': new_farmer.gender,
+            'age': getattr(new_farmer, 'age', None),
+            'gender': getattr(new_farmer, 'gender', None),
             'credit_score': new_farmer.credit_score,
             'farm_size': new_farmer.farm_size,
-            'water_source': new_farmer.water_source,
+            'water_source': irrigation_type,  # Map fallback field dynamically
             'county': new_farmer.county,
             'sub_county': new_farmer.sub_county,
             'primary_crop': new_farmer.primary_crop,
@@ -438,8 +598,8 @@ def officer_register_farmer():
         }
         ns.sync_user_node(user_payload)
         ns.close()
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Neo4j Farmer Registration Sync Failure: {e}")
 
     flash(f"Farmer {full_name} registered successfully!", "success")
     return redirect(url_for('dashboard.index'))
@@ -485,17 +645,17 @@ def officer_copilot(farmer_id):
     farmer = User.query.get_or_404(farmer_id)
     
     # Compile history
-    visits = FieldVisit.query.filter_by(farmer_id=farmer.id).order_by(FieldVisit.created_at.desc()).limit(3).all()
-    visits_text = "; ".join([f"{v.created_at.strftime('%Y-%m-%d')}: {v.crop_health_status} ({v.recommended_action or 'No recommendation'})" for v in visits]) or "No visits logged yet."
+    components_visits = FieldVisit.query.filter_by(farmer_id=farmer.id).order_by(FieldVisit.created_at.desc()).limit(3).all()
+    visits_text = "; ".join([f"{v.created_at.strftime('%Y-%m-%d')}: {v.crop_health_status} ({v.recommended_action or 'No recommendation'})" for v in components_visits]) or "No visits logged yet."
     
-    yields = CropYield.query.filter_by(user_id=farmer.id).order_by(CropYield.created_at.desc()).limit(3).all()
-    yields_text = "; ".join([f"{y.season_name}: {y.crop_name} harvested {y.yield_kg}kg, revenue KES {y.revenue}" for y in yields]) or "No yield records uploaded."
+    components_yields = CropYield.query.filter_by(user_id=farmer.id).order_by(CropYield.created_at.desc()).limit(3).all()
+    yields_text = "; ".join([f"{y.season_name}: {y.crop_name} harvested {y.yield_kg}kg, revenue KES {y.revenue}" for y in components_yields]) or "No yield records uploaded."
 
     prompt = f"""
     You are AgriNexus Co-Pilot, an AI field advisor. Compile a pre-visit briefing dossier for a farmer:
     - Name: {farmer.full_name}
-    - Location: {farmer.county} County, {farmer.sub_county} Sub-county, Ward: {farmer.ward}
-    - Soil: {farmer.soil_type} | Irrigation: {farmer.irrigation_type} | Years Farming: {farmer.years_farming}
+    - Location: {farmer.county} County, {farmer.sub_county} Sub-county, Ward: {getattr(farmer, 'ward', 'N/A')}
+    - Soil: {getattr(farmer, 'soil_type', 'Clay Loam')} | Irrigation: {getattr(farmer, 'irrigation_type', 'Rain-fed')} | Years Farming: {getattr(farmer, 'years_farming', 0)}
     - Credit Score Baseline: {farmer.credit_score} / 850
     - Farm Visits History: {visits_text}
     - Yield Records: {yields_text}
@@ -512,4 +672,5 @@ def officer_copilot(farmer_id):
         response = ai.model.generate_content(prompt)
         return {"dossier": response.text.strip()}
     except Exception as e:
+        print(f"Officer Copilot Intelligence Generation Error: {e}")
         return {"dossier": f"Hitilafu wakati wa kutoa ripoti: {str(e)}"}, 500

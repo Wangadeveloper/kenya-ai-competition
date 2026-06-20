@@ -87,7 +87,12 @@ class FarmPlan(db.Model):
     crop_to_plant = db.Column(db.String(50), nullable=False)
     estimated_budget = db.Column(db.Float, default=0.0)
     expected_yield_kg = db.Column(db.Float, nullable=True, default=0.0)
-    ai_recommendations = db.Column(db.Text, nullable=True) 
+    ai_recommendations = db.Column(db.Text, nullable=True)
+    
+    # EU Compliance Export Fields
+    is_export_oriented = db.Column(db.Boolean, nullable=False, default=False)
+    target_market = db.Column(db.String(50), nullable=True, default='Local')  # e.g. 'EU', 'Local', 'Regional'
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
@@ -183,6 +188,12 @@ class FarmLedger(db.Model):
     category = db.Column(db.String(50), nullable=False) # e.g. Seeds, Fertilizer, Labor, Harvest Sale
     amount = db.Column(db.Float, nullable=False)
     description = db.Column(db.String(200), nullable=True)
+    
+    # EU Compliance Traceability Audit Field
+    # Applied automatically when category is a chemical input (Fertilizer, Pesticide, Herbicide)
+    # Values: 'Unverified' (default), 'Safe' (AI screened, passed), 'Flagged' (AI screened, failed EU check)
+    compliance_status = db.Column(db.String(20), nullable=False, default='Unverified')
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 

@@ -287,3 +287,67 @@ class Neo4jService:
             MERGE (r)-[:FOR_LOAN]->(l)
             """
             session.run(query, farmer_phone=farmer_phone, loan_id=loan_id, repayment_id=repayment_id, amount=amount, status=status)
+
+
+    def log_input_purchase(self, farmer_phone, input_name, manufacturer, batch, compliance_status):
+        """
+        EU Compliance Graph Module: Merges an Input node and links the farmer via :PURCHASED_INPUT.
+        compliance_status: 'Safe', 'Flagged', or 'Unverified'
+        This edge is queryable by peers in the same county/crop cluster for GraphRAG risk propagation.
+        """
+        with self.driver.session() as session:
+            query = """
+            MATCH (f:User {phone_number: $farmer_phone, role: 'farmer'})
+            MERGE (i:Input {name: $input_name, batch: $batch})
+            SET i.manufacturer = $manufacturer,
+                i.last_updated = datetime()
+            MERGE (f)-[r:PURCHASED_INPUT]->(i)
+            SET r.compliance_status = $compliance_status,
+                r.recorded_at = datetime()
+            """
+            session.run(
+                query,
+                farmer_phone=farmer_phone,
+                input_name=input_name,
+                manufacturer=manufacturer,
+                batch=batch,
+                compliance_status=compliance_status
+            )
+
+
+    def link_crop_to_market(self, crop_name, market_name):
+        """
+        EU Compliance Graph Module: Creates a DESTINED_FOR edge between a Crop and a Market node.
+        Used to signal export intent (e.g. Maize -> EU) for advisory and loan risk context.
+        """
+        with self.driver.session() as session:
+            query = """
+            MERGE (c:Crop {name: $crop_name})
+            MERGE (m:Market {name: $market_name})
+            MERGE (c)-[r:DESTINED_FOR]->(m)
+            SET r.updated_at = datetime()
+            """
+            session.run(query, crop_name=crop_name, market_name=market_name)
+
+
+    def get_compliance_exposed_peers(self, county, crop_name, farmer_phone):
+        """
+        EU Compliance GraphRAG Query: Finds peer farmers in the same county growing the same crop
+        who have purchased inputs flagged as non-EU-compliant.
+        Used to proactively broadcast alerts to at-risk cluster members.
+        Returns a list of dicts: [{name, phone_number, input_name}]
+        """
+        with self.driver.session() as session:
+            query = """
+            MATCH (other:User)-[:LOCATED_IN]->(loc:Location)
+            WHERE loc.county = $county AND other.phone_number <> $farmer_phone
+              AND other.role = 'farmer'
+            MATCH (other)-[:GROWS]->(c:Crop {name: $crop_name})
+            MATCH (other)-[r:PURCHASED_INPUT]->(i:Input)
+            WHERE r.compliance_status = 'Flagged'
+            RETURN other.full_name AS name,
+                   other.phone_number AS phone_number,
+                   i.name AS input_name
+            """
+            result = session.run(query, county=county, crop_name=crop_name, farmer_phone=farmer_phone)
+            return [dict(record) for record in result]

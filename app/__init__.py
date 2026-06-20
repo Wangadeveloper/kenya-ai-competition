@@ -11,7 +11,7 @@ def create_app(config_class=Config):
     # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
-    migrate.init_app(app)
+    migrate.init_app(app, db)
     @app.template_filter('render_markdown')
     def render_markdown_filter(text):
         if not text:

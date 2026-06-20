@@ -91,7 +91,7 @@ def ussd_gateway():
             if user.role == 'officer':
                 response = f"CON Welcome, Officer {user.full_name}\n1. Profile Details\n2. Check Credit\n3. Market Prices\n4. Apply Loan\n5. Log Visit"
             else:
-                response = f"CON Welcome, Farmer {user.full_name}\n1. Profile Details\n2. Check Credit\n3. Market Prices\n4. Apply Loan"
+                response = f"CON Welcome, Farmer {user.full_name}\n1. Profile Details\n2. Check Credit\n3. Market Prices\n4. Apply Loan\n5. Check Input (EU Compliance)"
                 
         else:
             choice = parts[0]
@@ -155,6 +155,37 @@ def ussd_gateway():
                     except Exception as e:
                         response = f"END System error: {str(e)[:50]}"
                         
+            elif choice == "5" and user.role == 'farmer':
+                # Option 5: EU Compliance Text Check (Farmer Only)
+                if len(parts) == 1:
+                    response = "CON Enter fertilizer/pesticide name or active ingredient:"
+                elif len(parts) >= 2:
+                    ingredient_text = parts[1].strip()
+                    try:
+                        ai = AIService()
+                        risk_level, flagged_substances, reason = ai.check_text_compliance(
+                            ingredient_text, target_crop=user.primary_crop or 'General'
+                        )
+                        compliance_status = 'Flagged' if flagged_substances or risk_level == 'High' else 'Safe'
+                        # Log to Neo4j if flagged
+                        if compliance_status == 'Flagged':
+                            try:
+                                ns = Neo4jService()
+                                ns.log_input_purchase(
+                                    farmer_phone=user.phone_number,
+                                    input_name=ingredient_text[:100],
+                                    manufacturer='Unknown',
+                                    batch='USSD-Checked',
+                                    compliance_status='Flagged'
+                                )
+                                ns.close()
+                            except Exception:
+                                pass
+                        flagged_str = ", ".join(flagged_substances[:2]) if flagged_substances else "None"
+                        response = f"END EU Check Result: {risk_level} Risk\nFlagged: {flagged_str}\n{reason[:100]}"
+                    except Exception as e:
+                        response = f"END EU check failed. Contact your field officer. Error: {str(e)[:40]}"
+
             elif choice == "5" and user.role == 'officer':
                 # Option 5: Log Visit (Officer Only)
                 if len(parts) == 1:
@@ -266,8 +297,49 @@ def inbound_sms_gateway():
             except Exception:
                 reply = f"AgriNexus REPORT: Ripoti yako ya {pest} imepokelewa na kusajiliwa kwenye mfumo yetu."
 
+    elif keyword == "CHECK":
+        # EU Compliance text check via SMS for feature-phone users
+        ingredient = argument
+        if not ingredient:
+            reply = "AgriNexus CHECK: Weka jina la mbolea/dawa (e.g. CHECK DAP Fertilizer)."
+        else:
+            try:
+                ai = AIService()
+                risk_level, flagged_substances, reason = ai.check_text_compliance(
+                    ingredient, target_crop=user.primary_crop or 'General'
+                )
+                compliance_status = 'Flagged' if flagged_substances or risk_level == 'High' else 'Safe'
+                # Log to Neo4j if flagged
+                if compliance_status == 'Flagged':
+                    try:
+                        ns = Neo4jService()
+                        ns.log_input_purchase(
+                            farmer_phone=user.phone_number,
+                            input_name=ingredient[:100],
+                            manufacturer='Unknown',
+                            batch='SMS-Checked',
+                            compliance_status='Flagged'
+                        )
+                        # Broadcast to at-risk cluster peers
+                        exposed_peers = ns.get_compliance_exposed_peers(
+                            user.county, user.primary_crop or 'Maize', user.phone_number
+                        )
+                        for peer in exposed_peers:
+                            broadcast = (
+                                f"AgriNexus EU ALERT: '{ingredient[:40]}' flagged in your area. "
+                                f"Risk: {risk_level}. Avoid use for EU-destined crops. Check your inputs."
+                            )
+                            NotificationService.send_sms_via_africastalking(peer['phone_number'], broadcast)
+                        ns.close()
+                    except Exception:
+                        pass
+                flagged_str = ", ".join(flagged_substances[:2]) if flagged_substances else "None"
+                reply = f"AgriNexus CHECK [{risk_level} Risk]: '{ingredient[:30]}'. Flagged: {flagged_str}. {reason[:80]}"
+            except Exception:
+                reply = "AgriNexus CHECK: Tathmini ya EU haikufaulu. Wasiliana na afisa wa kilimo."
+
     else:
-        reply = "AgriNexus Help:\nUse keywords:\n- ADVISE <crop>\n- PRICE <crop>\n- REPORT <pest>"
+        reply = "AgriNexus Help:\nUse keywords:\n- ADVISE <crop>\n- PRICE <crop>\n- REPORT <pest>\n- CHECK <input name>"
 
     NotificationService.send_sms_via_africastalking(from_phone, reply)
     return Response("OK", status=200)
