@@ -1,17 +1,31 @@
+import os
+import markdown
 from flask import Flask
 from app.config import Config
 from app.extensions import db, login_manager, migrate
-import markdown
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     app.jinja_env.globals.update(hasattr=hasattr)
 
+    # 1. Ensure the instance folder always exists for SQLite
+    os.makedirs(app.instance_path, exist_ok=True)
+
     # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
+
+    # 2. AUTOMATICALLY CREATE TABLES ON STARTUP
+    with app.app_context():
+        # CRUCIAL: You must import your models file here so SQLAlchemy 
+        # knows your tables exist before calling create_all()
+        from app.models import sql_models 
+        
+        db.create_all()
+        print("Database tables verified/created successfully!")
+
     @app.template_filter('render_markdown')
     def render_markdown_filter(text):
         if not text:
@@ -30,6 +44,5 @@ def create_app(config_class=Config):
     app.register_blueprint(loans_bp, url_prefix='/loans')
     app.register_blueprint(community_bp, url_prefix='/community')
     app.register_blueprint(ussd_bp, url_prefix='/ussd')
-
 
     return app
