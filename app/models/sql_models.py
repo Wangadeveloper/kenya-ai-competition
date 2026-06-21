@@ -50,6 +50,7 @@ class User(UserMixin, db.Model):
     # Field Officer Specific Attributes
     employee_id = db.Column(db.String(50), unique=True, nullable=True)
     assigned_region = db.Column(db.String(100), nullable=True)
+    organization = db.Column(db.String(100), nullable=True, default='Mercy Corps')
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -246,3 +247,20 @@ class ExtensionGuide(db.Model):
     content = db.Column(db.Text, nullable=False)
     embedding = db.Column(db.JSON, nullable=True) # Will store list of floats (embedding vector)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class MasumiTransaction(db.Model):
+    __tablename__ = 'masumi_transactions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    payment_id = db.Column(db.String(50), unique=True, nullable=False)
+    officer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    farmer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    amount = db.Column(db.Float, nullable=False, default=2.50)
+    status = db.Column(db.String(30), nullable=False, default='pending_payment') # 'pending_payment', 'paid', 'completed', 'failed'
+    report_payload = db.Column(db.JSON, nullable=True) # stores JSON response from Gemini
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    officer = db.relationship('User', foreign_keys=[officer_id], backref=db.backref('masumi_transactions_made', lazy='dynamic'))
+    farmer = db.relationship('User', foreign_keys=[farmer_id], backref=db.backref('masumi_transactions_received', lazy='dynamic'))

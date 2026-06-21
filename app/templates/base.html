@@ -178,6 +178,13 @@
                class="px-3.5 py-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 text-gray-700 transition text-xs font-semibold flex items-center gap-1.5">
                 <i data-lucide="coins" class="w-4 h-4"></i> Loans
             </a>
+
+            {% if current_user.role == 'officer' %}
+            <a href="{{ url_for('dashboard.officer_masumi_hub') }}"
+               class="px-3.5 py-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 text-gray-700 transition text-xs font-semibold flex items-center gap-1.5">
+                <i data-lucide="wallet" class="w-4 h-4"></i> Masumi Sandbox
+            </a>
+            {% endif %}
         </div>
     </div>
     {% endif %}

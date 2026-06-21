@@ -101,6 +101,7 @@ def register():
             
         elif form.role.data == 'officer':
             new_user.employee_id = form.employee_id.data
+            new_user.organization = form.organization.data or 'Mercy Corps'
             new_user.assigned_region = f"{form.county.data} - {form.sub_county.data or 'All Zones'}"
             
         # Step 4: Commit and execute relational database transactional state write
@@ -132,7 +133,8 @@ def register():
                 'years_farming': getattr(new_user, 'years_farming', 0),
                 'smartphone_owned': getattr(new_user, 'smartphone_owned', True),
                 'literacy_level': getattr(new_user, 'literacy_level', None),
-                'preferred_language': getattr(new_user, 'preferred_language', None)
+                'preferred_language': getattr(new_user, 'preferred_language', None),
+                'organization': getattr(new_user, 'organization', 'Mercy Corps')
             }
 
             # Execute transactional Cypher MERGE logic safely

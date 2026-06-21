@@ -38,6 +38,7 @@ class Neo4jService:
                 u.smartphone_owned = $smartphone_owned,
                 u.literacy_level = $literacy_level,
                 u.preferred_language = $preferred_language,
+                u.organization = $organization,
                 u.updated_at = datetime()
 
             // Map Geographic Context
@@ -79,7 +80,8 @@ class Neo4jService:
                 years_farming=user_data.get('years_farming', 0),
                 smartphone_owned=user_data.get('smartphone_owned', True),
                 literacy_level=user_data.get('literacy_level', 'Basic'),
-                preferred_language=user_data.get('preferred_language', 'English')
+                preferred_language=user_data.get('preferred_language', 'English'),
+                organization=user_data.get('organization', 'Mercy Corps')
             )
 
 

@@ -93,6 +93,24 @@ if __name__ == '__main__':
             db.session.add_all([officer, f1, f2])
             db.session.commit()
 
+            # Seed Farm Ledger entries for farmers
+            from app.models.sql_models import FarmLedger, CropYield
+            
+            # Farmer John (f1) ledger and yield
+            l1 = FarmLedger(user_id=f1.id, record_type='income', category='Harvest Sale', amount=150000.0, description='Sold 45 bags of premium White Maize to Kakamega Market', compliance_status='Safe')
+            l2 = FarmLedger(user_id=f1.id, record_type='expense', category='Fertilizer', amount=35000.0, description='Bought certified organic bio-fertilizer DAP alternatives', compliance_status='Safe')
+            l3 = FarmLedger(user_id=f1.id, record_type='expense', category='Seeds', amount=12000.0, description='Bought 25kg Pioneer Hybrid Maize Seeds', compliance_status='Safe')
+            y1 = CropYield(user_id=f1.id, crop_name='Maize', season_name='Long Rains 2025', acreage=2.5, yield_kg=3200.0, revenue=120000.0)
+            
+            # Farmer Mary (f2) ledger and yield
+            l4 = FarmLedger(user_id=f2.id, record_type='income', category='Harvest Sale', amount=95000.0, description='Sold yellow beans locally', compliance_status='Safe')
+            l5 = FarmLedger(user_id=f2.id, record_type='expense', category='Pesticide', amount=25000.0, description='Bought generic pesticide containing high cadmium limits', compliance_status='Flagged')
+            l6 = FarmLedger(user_id=f2.id, record_type='expense', category='Seeds', amount=8000.0, description='Bought local bush bean seeds', compliance_status='Safe')
+            y2 = CropYield(user_id=f2.id, crop_name='Beans', season_name='Long Rains 2025', acreage=1.5, yield_kg=1200.0, revenue=85000.0)
+
+            db.session.add_all([l1, l2, l3, y1, l4, l5, l6, y2])
+            db.session.commit()
+
             # Sync to Neo4j
             try:
                 from app.services.neo4j_service import Neo4jService

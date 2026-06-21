@@ -38,6 +38,7 @@ class RegistrationForm(FlaskForm):
     
     # Field Officer Specific Fields
     employee_id = StringField('Official Employee ID Badge', validators=[Optional()])
+    organization = StringField('Organization (e.g. Mercy Corps, Equity Bank, KCB)', default='Mercy Corps', validators=[Optional()])
     
     submit = SubmitField('Register')
 
