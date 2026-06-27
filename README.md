@@ -1,4 +1,4 @@
-# AgriFinance Platform: Hybrid Graph & Generative AI Agri-Advisory Ecosystem
+# Agriculture4Good Platform: Hybrid Graph & Generative AI Agri-Advisory Ecosystem
 
 A modern, robust financial-inclusion, seasonal-planning, and compliance portal engineered specifically for smallholder farmers and agricultural SACCOs (Savings and Credit Co-operatives) in Kenya. This platform leverages a hybrid database paradigm—coupling traditional relational structures with high-performance graph networking—and supercharges the user experience with contextual, localized Generative AI.
 
@@ -69,7 +69,7 @@ The Neo4j graph maps the community. When a farmer publishes a seasonal post/advi
 ## 📂 Project Directory Structure
 
 ```text
-agrifinance_platform/
+agriculture4good_platform/
 │
 ├── app/
 │   ├── __init__.py          # Application factory, blueprints & template filters
@@ -123,7 +123,7 @@ agrifinance_platform/
 1. **Clone the repository and enter the directory:**
    ```bash
    git clone <repository_url>
-   cd agrifinance_platform
+   cd agriculture4good_platform
    ```
 
 2. **Create and activate a virtual environment:**
@@ -141,7 +141,7 @@ agrifinance_platform/
    Create a `.env` file in the root directory (based on the `.env` template if available) with the following parameters:
    ```env
    SECRET_KEY=your_flask_secret_key_here
-   DATABASE_URL=sqlite:///agrifinance.db
+   DATABASE_URL=sqlite:///agriculture4good.db
    
    # Neo4j Configurations
    NEO4J_URI=bolt://localhost:7687

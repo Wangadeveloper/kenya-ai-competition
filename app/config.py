@@ -7,7 +7,7 @@ class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'default-fallback-sacco-key')
     
     # SQL Database Configuration (Switched fallback to SQLite)
-    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///agrifinance.db')
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///agriculture4good.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Neo4j Graph Database Configuration
