@@ -35,9 +35,15 @@ def feed():
         if summary_text:
             full_body += f"\n\n--- AI Video Takeaways ---\n{summary_text}"
 
+        # Determine post title based on user role
+        if current_user.role == 'buyer':
+            post_title = f"Quality Standard #{crop_tag}"
+        else:
+            post_title = f"Advisory regarding #{crop_tag}"
+
         new_post = Post(
             user_id=current_user.id,
-            title=f"Advisory regarding #{crop_tag}",
+            title=post_title,
             body=full_body
         )
         db.session.add(new_post)

@@ -43,7 +43,11 @@ def login():
         
         # Security validation check: Ensure the next page route path is relative 
         if not next_page or urlparse(next_page).netloc != '':
-            next_page = url_for('dashboard.index')
+            # Buyers are restricted to the community feed only
+            if user.role == 'buyer':
+                next_page = url_for('community.feed')
+            else:
+                next_page = url_for('dashboard.index')
             
         return redirect(next_page)
         
@@ -59,6 +63,8 @@ def register():
     instantly to the Neo4j Graph database for down-stream GraphRAG processing.
     """
     if current_user.is_authenticated:
+        if current_user.role == 'buyer':
+            return redirect(url_for('community.feed'))
         return redirect(url_for('dashboard.index'))
         
     form = RegistrationForm()
@@ -83,7 +89,7 @@ def register():
             role=form.role.data,
             full_name=form.full_name.data,
             phone_number=form.phone_number.data.strip(),
-            county=form.county.data,
+            county=form.county.data or '',
             sub_county=form.sub_county.data,
             age=form.age.data,
             gender=form.gender.data,
@@ -103,6 +109,9 @@ def register():
             new_user.employee_id = form.employee_id.data
             new_user.organization = form.organization.data or 'Mercy Corps'
             new_user.assigned_region = f"{form.county.data} - {form.sub_county.data or 'All Zones'}"
+        
+        elif form.role.data == 'buyer':
+            new_user.buyer_organization = form.buyer_organization.data
             
         # Step 4: Commit and execute relational database transactional state write
         db.session.add(new_user)
@@ -134,7 +143,8 @@ def register():
                 'smartphone_owned': getattr(new_user, 'smartphone_owned', True),
                 'literacy_level': getattr(new_user, 'literacy_level', None),
                 'preferred_language': getattr(new_user, 'preferred_language', None),
-                'organization': getattr(new_user, 'organization', 'Mercy Corps')
+                'organization': getattr(new_user, 'organization', 'Mercy Corps'),
+                'buyer_organization': getattr(new_user, 'buyer_organization', None)
             }
 
             # Execute transactional Cypher MERGE logic safely

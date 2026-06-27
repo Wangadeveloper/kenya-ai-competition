@@ -10,7 +10,7 @@ class LoginForm(FlaskForm):
     submit = SubmitField('Sign In')
 
 class RegistrationForm(FlaskForm):
-    role = SelectField('Register As', choices=[('farmer', 'Farmer / Mkulima'), ('officer', 'Field Officer')], validators=[DataRequired()])
+    role = SelectField('Register As', choices=[('farmer', 'Farmer / Mkulima'), ('officer', 'Field Officer'), ('buyer', 'Buyer / Mnunuzi')], validators=[DataRequired()])
     username = StringField('Username', validators=[DataRequired()])
     email = StringField('Email Address', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
@@ -18,7 +18,7 @@ class RegistrationForm(FlaskForm):
     
     full_name = StringField('Full Name', validators=[DataRequired()])
     phone_number = StringField('Phone Number', validators=[DataRequired()])
-    county = StringField('County', validators=[DataRequired()])
+    county = StringField('County', validators=[Optional()])
     sub_county = StringField('Sub-County', validators=[Optional()])
     age = IntegerField('Age', validators=[Optional()])
     gender = SelectField('Gender', choices=[('Male', 'Male'), ('Female', 'Female')], validators=[Optional()])
@@ -39,6 +39,9 @@ class RegistrationForm(FlaskForm):
     # Field Officer Specific Fields
     employee_id = StringField('Official Employee ID Badge', validators=[Optional()])
     organization = StringField('Organization (e.g. Mercy Corps, Equity Bank, KCB)', default='Mercy Corps', validators=[Optional()])
+    
+    # Buyer Specific Fields
+    buyer_organization = StringField('Organization / Company Name', validators=[Optional()])
     
     submit = SubmitField('Register')
 
@@ -64,3 +67,7 @@ class RegistrationForm(FlaskForm):
             user = User.query.filter_by(employee_id=employee_id.data).first()
             if user:
                 raise ValidationError('This Employee Badge ID is already associated with another account.')
+    
+    def validate_buyer_organization(self, buyer_organization):
+        if self.role.data == 'buyer' and not buyer_organization.data:
+            raise ValidationError('Buyers must provide their organization or company name.')

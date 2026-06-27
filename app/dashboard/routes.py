@@ -27,6 +27,10 @@ def home():
 @dashboard_bp.route('/dashboard')
 @login_required
 def index():
+    # Buyers are restricted to the community feed only
+    if current_user.role == 'buyer':
+        return redirect(url_for('community.feed'))
+    
     if current_user.role == 'officer':
         farmers_in_region = User.query.filter_by(role='farmer', county=current_user.county).all()
         pending_loans = LoanApplication.query.join(User, LoanApplication.user_id == User.id)\

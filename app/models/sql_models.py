@@ -15,13 +15,13 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(256), nullable=False)
     
-    # Core Persona Routing System ('farmer' or 'officer')
+    # Core Persona Routing System ('farmer', 'officer', or 'buyer')
     role = db.Column(db.String(20), nullable=False, default='farmer')
     
     # Shared Personal Telemetry
     full_name = db.Column(db.String(100), nullable=False)
     phone_number = db.Column(db.String(20), nullable=False, unique=True)
-    county = db.Column(db.String(50), nullable=False, default='Kakamega')
+    county = db.Column(db.String(50), nullable=False, default='')
     sub_county = db.Column(db.String(50), nullable=True)
     age = db.Column(db.Integer, nullable=True)
     gender = db.Column(db.String(10), nullable=True)
@@ -51,6 +51,9 @@ class User(UserMixin, db.Model):
     employee_id = db.Column(db.String(50), unique=True, nullable=True)
     assigned_region = db.Column(db.String(100), nullable=True)
     organization = db.Column(db.String(100), nullable=True, default='Mercy Corps')
+    
+    # Buyer Specific Attributes
+    buyer_organization = db.Column(db.String(150), nullable=True)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

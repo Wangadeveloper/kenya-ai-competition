@@ -40,7 +40,7 @@
             </div>
         </div>
 
-        <div class="border-t border-gray-100 my-4 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="border-t border-gray-100 my-4 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4" id="personal-info-section">
             <div>
                 <label class="block text-xs font-bold text-gray-600 mb-1">Full Legal Name</label>
                 {{ form.full_name(class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm") }}
@@ -51,18 +51,21 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-3 gap-4">
-            <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1">County</label>
-                {{ form.county(class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm") }}
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1">Sub-County</label>
-                {{ form.sub_county(class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm") }}
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1">Age</label>
-                {{ form.age(class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm") }}
+        <!-- LOCATION & DEMOGRAPHICS (Hidden for buyers) -->
+        <div id="location-demographics-section">
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">County</label>
+                    {{ form.county(class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm") }}
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">Sub-County</label>
+                    {{ form.sub_county(class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm") }}
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">Age</label>
+                    {{ form.age(class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm") }}
+                </div>
             </div>
         </div>
 
@@ -116,6 +119,18 @@
             </div>
         </div>
 
+        <!-- BUYER FIELDS CONTAINER -->
+        <div id="buyer-fields-container" class="bg-amber-50/50 p-5 rounded-2xl border border-amber-100/50 hidden space-y-4">
+            <h4 class="text-xs font-extrabold text-amber-800 uppercase tracking-wide">🏢 Buyer / Organization Profile</h4>
+            <p class="text-xs text-amber-700">As a buyer, you'll access the Community Feed to post quality standards and product requirements. Farmers can subscribe to your updates.</p>
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Organization / Company Name <span class="text-red-500">*</span></label>
+                {{ form.buyer_organization(class="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-amber-500", placeholder="e.g. Fresh Produce Ltd, Twiga Foods, Export House Kenya") }}
+                {% for err in form.buyer_organization.errors %}<p class="text-xs text-red-500 mt-1">{{ err }}</p>{% endfor %}
+                <p class="text-[10px] text-amber-700 mt-1 italic">Your organization name will be visible to farmers in the community feed.</p>
+            </div>
+        </div>
+
         <div>
             {{ form.submit(class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg cursor-pointer transition") }}
         </div>
@@ -127,14 +142,24 @@
         const roleSelector = document.getElementById("role-selector");
         const farmerContainer = document.getElementById("farmer-fields-container");
         const officerContainer = document.getElementById("officer-fields-container");
+        const buyerContainer = document.getElementById("buyer-fields-container");
+        const locationSection = document.getElementById("location-demographics-section");
 
         function handleRoleFieldsToggle() {
+            // Hide all role-specific containers first
+            farmerContainer.classList.add("hidden");
+            officerContainer.classList.add("hidden");
+            buyerContainer.classList.add("hidden");
+            locationSection.classList.remove("hidden");
+
             if (roleSelector.value === "officer") {
-                farmerContainer.classList.add("hidden");
                 officerContainer.classList.remove("hidden");
+            } else if (roleSelector.value === "buyer") {
+                buyerContainer.classList.remove("hidden");
+                // Buyers don't need location/demographics
+                locationSection.classList.add("hidden");
             } else {
                 farmerContainer.classList.remove("hidden");
-                officerContainer.classList.add("hidden");
             }
         }
 

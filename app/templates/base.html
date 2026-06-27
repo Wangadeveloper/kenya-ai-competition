@@ -129,6 +129,15 @@
     {% if current_user.is_authenticated %}
     <nav class="fixed bottom-0 left-0 right-0 z-50 sm:hidden">
         <div class="mx-4 mb-4 bg-white/90 backdrop-blur-md border border-gray-200/80 rounded-2xl shadow-xl">
+            {% if current_user.role == 'buyer' %}
+            <div class="grid grid-cols-1 text-center text-[10px] font-medium text-gray-500">
+                <a href="{{ url_for('community.feed') }}"
+                   class="flex flex-col items-center py-2.5 text-amber-600 transition">
+                    <i data-lucide="users-2" class="w-5 h-5 mb-0.5"></i>
+                    <span>Community</span>
+                </a>
+            </div>
+            {% else %}
             <div class="grid grid-cols-4 text-center text-[10px] font-medium text-gray-500">
                 <a href="{{ url_for('dashboard.index') }}"
                    class="flex flex-col items-center py-2.5 hover:text-emerald-600 text-gray-600 transition">
@@ -154,11 +163,18 @@
                     <span>Loans</span>
                 </a>
             </div>
+            {% endif %}
         </div>
     </nav>
 
     <div class="hidden sm:block fixed bottom-6 right-6 z-50">
         <div class="bg-white/90 backdrop-blur-md border border-gray-200/80 shadow-xl rounded-2xl p-1.5 flex items-center gap-1">
+            {% if current_user.role == 'buyer' %}
+            <a href="{{ url_for('community.feed') }}"
+               class="px-3.5 py-2 rounded-xl bg-amber-50 text-amber-600 transition text-xs font-semibold flex items-center gap-1.5">
+                <i data-lucide="users-2" class="w-4 h-4"></i> Community
+            </a>
+            {% else %}
             <a href="{{ url_for('dashboard.index') }}"
                class="px-3.5 py-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 text-gray-700 transition text-xs font-semibold flex items-center gap-1.5">
                 <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
@@ -178,6 +194,7 @@
                class="px-3.5 py-2 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 text-gray-700 transition text-xs font-semibold flex items-center gap-1.5">
                 <i data-lucide="coins" class="w-4 h-4"></i> Loans
             </a>
+            {% endif %}
 
         </div>
     </div>
